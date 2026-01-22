@@ -34,25 +34,29 @@ A real-time sentiment analysis platform that analyzes social media sentiment for
 - MongoDB
 
 ### Backend Setup
-
-\\\ash
+```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Windows
+venv\Scripts\activate
+
+# Mac/Linux
+source venv/bin/activate
+
 pip install -r requirements-fixed.txt
 cp .env.example .env
 uvicorn app.main:app --reload
-\\\
+```
 
 Backend runs on http://localhost:8000
 
 ### Frontend Setup
-
-\\\ash
+```bash
 cd frontend
 npm install
 npm run dev
-\\\
+```
 
 Frontend runs on http://localhost:3000
 
@@ -69,8 +73,7 @@ Interactive API docs available at: http://localhost:8000/docs
 5. View real-time sentiment analysis
 
 ## Project Structure
-
-\\\
+```
 sentiment-dashboard/
 ├── backend/           # FastAPI backend
 │   ├── app/
@@ -83,7 +86,7 @@ sentiment-dashboard/
     └── src/
         ├── components/
         └── services/
-\\\
+```
 
 ## Development Status
 
