@@ -36,6 +36,7 @@ app.add_middleware(
 @app.get("/")
 async def root():
     """Welcome endpoint"""
+    logger.info("📍 Root endpoint accessed")  # ← Keep this one!
     return {
         "message": "Welcome to Sentiment Analysis API! 🚀",
         "version": "1.0.0",
@@ -48,6 +49,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    logger.info("🏥 Health check performed")
     return {
         "status": "healthy",
         "service": "Sentiment Analysis API",
