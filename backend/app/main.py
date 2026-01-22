@@ -2,6 +2,7 @@
 Main FastAPI application file.
 """
 
+from app.api import sentiment
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -31,6 +32,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(
+    sentiment.router,
+    prefix=f"{settings.API_V1_STR}/sentiment",
+    tags = ["sentiment"]
+)    
 
 
 @app.get("/")
