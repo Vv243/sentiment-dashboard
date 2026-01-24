@@ -8,6 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 import logging
 
+# Import database functions for Day 3
+from app.database import connect_to_mongo, close_mongo_connection
+
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO if settings.DEBUG else logging.WARNING,
@@ -71,6 +75,11 @@ async def startup_event():
     logger.info("🚀 Starting Sentiment Analysis API...")
     logger.info(f"📝 Documentation available at: /docs")
     logger.info(f"🏥 Health check available at: /health")
+    
+    # Day 3: Connect to MongoDB
+    logger.info("📦 Connecting to MongoDB...")      # ← MISSING!
+    await connect_to_mongo()                         # ← MISSING!
+    
     logger.info("✅ Startup complete!")
 
 
@@ -78,3 +87,9 @@ async def startup_event():
 async def shutdown_event():
     """Runs when the application shuts down"""
     logger.info("👋 Shutting down Sentiment Analysis API...")
+    
+    # Day 3: Close MongoDB connection
+    logger.info("📦 Closing MongoDB connection...")
+    await close_mongo_connection()
+    
+    logger.info("✅ Shutdown complete!")
