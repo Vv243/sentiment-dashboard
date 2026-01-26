@@ -2,6 +2,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import os
 from dotenv import load_dotenv
+import certifi
 
 # Load environment variables
 load_dotenv()
@@ -23,7 +24,16 @@ async def connect_to_mongo():
         if not mongodb_url:
             raise ValueError("MONGODB_URL not found in environment variables")
         
-        mongodb_client = AsyncIOMotorClient(mongodb_url)
+        # MongoDB client with SSL/TLS settings for production
+        mongodb_client = AsyncIOMotorClient(
+            mongodb_url,
+            tls=True,
+            tlsAllowInvalidCertificates=True,
+            tlsCAFile=certifi.where(),
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=10000,
+            socketTimeoutMS=10000
+        )
         database = mongodb_client[database_name]
         
         # Test the connection
