@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
+
+// API URL from environment variable
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 function App() {
   const [text, setText] = useState('')
@@ -17,7 +20,7 @@ function App() {
   const fetchHistory = async () => {
     setLoadingHistory(true)
     try {
-      const response = await fetch('http://localhost:8000/api/v1/sentiment/history?limit=10')
+      const response = await fetch(`${API_URL}/api/v1/sentiment/history?limit=10`)
       if (response.ok) {
         const data = await response.json()
         setHistory(data.analyses)
@@ -31,7 +34,7 @@ function App() {
 
   const analyzeSentiment = async (e) => {
     e.preventDefault()
-    
+
     if (!text.trim()) {
       setError('Please enter some text to analyze')
       return
@@ -42,7 +45,7 @@ function App() {
     setResult(null)
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/sentiment/analyze', {
+      const response = await fetch(`${API_URL}/api/v1/sentiment/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,10 +59,10 @@ function App() {
 
       const data = await response.json()
       setResult(data)
-      
+
       // Refresh history after new analysis
       fetchHistory()
-      
+
       // Clear input
       setText('')
     } catch (err) {
@@ -74,7 +77,7 @@ function App() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
   }
 
@@ -94,26 +97,18 @@ function App() {
             rows="6"
             className="text-input"
           />
-          
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="analyze-button"
-          >
+
+          <button type="submit" disabled={loading} className="analyze-button">
             {loading ? 'Analyzing...' : 'Analyze Sentiment'}
           </button>
         </form>
 
-        {error && (
-          <div className="error-message">
-            ❌ {error}
-          </div>
-        )}
+        {error && <div className="error-message">❌ {error}</div>}
 
         {result && (
           <div className="result-card">
             <h2>Latest Analysis</h2>
-            
+
             <div className="sentiment-display">
               <span className="emoji">{result.emoji}</span>
               <span className="sentiment-label">{result.sentiment}</span>
@@ -167,9 +162,7 @@ function App() {
                 <div key={item._id || index} className="history-item">
                   <div className="history-header-row">
                     <span className="history-emoji">{item.emoji}</span>
-                    <span className={`history-sentiment ${item.sentiment}`}>
-                      {item.sentiment}
-                    </span>
+                    <span className={`history-sentiment ${item.sentiment}`}>{item.sentiment}</span>
                     <span className="history-date">{formatDate(item.timestamp)}</span>
                   </div>
                   <p className="history-text">"{item.text}"</p>
