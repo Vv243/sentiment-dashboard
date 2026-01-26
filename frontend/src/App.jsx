@@ -58,6 +58,8 @@ function App() {
       }
 
       const data = await response.json()
+      console.log('🔍 API Response:', data) // ADD THIS LINE
+      console.log('🔍 Moderation data:', data.moderation) // ADD THIS TOO
       setResult(data)
 
       // Refresh history after new analysis
@@ -117,6 +119,12 @@ function App() {
           <div className="result-card">
             <h2>Latest Analysis</h2>
 
+            {/* Is this warning code here? */}
+            {result.moderation?.flagged && (
+              <div className="moderation-warning">
+                ⚠️ <strong>Content Moderation Alert:</strong> {result.moderation.reason}
+              </div>
+            )}
             <div className="sentiment-display">
               <span className="emoji">{result.emoji}</span>
               <span className="sentiment-label">{result.sentiment}</span>

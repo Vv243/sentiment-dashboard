@@ -34,6 +34,7 @@ class SentimentResponse(BaseModel):
     scores: dict
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     saved_to_db: bool = False
+    moderation: dict = Field(default_factory=dict)  # NEW: Add this line
     
     class Config:
         json_schema_extra = {
@@ -48,7 +49,12 @@ class SentimentResponse(BaseModel):
                     "compound": 0.875
                 },
                 "timestamp": "2026-01-24T13:20:54.123456",
-                "saved_to_db": True
+                "saved_to_db": True,
+                "moderation": {
+                    "flagged": False,
+                    "reason": None,
+                    "severity": "safe"
+                }
             }
         }
 

@@ -76,9 +76,13 @@ async def startup_event():
     logger.info(f"📝 Documentation available at: /docs")
     logger.info(f"🏥 Health check available at: /health")
     
+    # Initialize content moderator (force import)
+    from app.services.content_moderator import content_moderator
+    logger.info(f"🛡️ Content moderator ready: {len(content_moderator.harmful_patterns)} patterns")
+    
     # Day 3: Connect to MongoDB
-    logger.info("📦 Connecting to MongoDB...")      # ← MISSING!
-    await connect_to_mongo()                         # ← MISSING!
+    logger.info("📦 Connecting to MongoDB...")
+    await connect_to_mongo()
     
     logger.info("✅ Startup complete!")
 
