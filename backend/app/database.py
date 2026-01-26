@@ -2,7 +2,6 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import logging
 import os
 from dotenv import load_dotenv
-import certifi
 
 # Load environment variables
 load_dotenv()
@@ -14,7 +13,7 @@ mongodb_client: AsyncIOMotorClient = None
 database = None
 
 async def connect_to_mongo():
-    """Connect to MongoDB when the application starts"""
+    """Connect to MongoDB when the application starts - NON-BLOCKING"""
     global mongodb_client, database
     try:
         # Get MongoDB settings from environment variables
@@ -22,26 +21,28 @@ async def connect_to_mongo():
         database_name = os.getenv("DATABASE_NAME", "sentiment_db")
         
         if not mongodb_url:
-            raise ValueError("MONGODB_URL not found in environment variables")
+            logger.warning("⚠️ MONGODB_URL not found - running without database")
+            return
         
-        # MongoDB client with SSL/TLS settings for production
+        # Try to connect with timeout
+        logger.info("📦 Attempting MongoDB connection...")
         mongodb_client = AsyncIOMotorClient(
             mongodb_url,
-            tls=True,
-            tlsAllowInvalidCertificates=True,
-            tlsCAFile=certifi.where(),
-            serverSelectionTimeoutMS=5000,
-            connectTimeoutMS=10000,
-            socketTimeoutMS=10000
+            serverSelectionTimeoutMS=5000,  # 5 second timeout
+            connectTimeoutMS=5000
         )
-        database = mongodb_client[database_name]
         
-        # Test the connection
+        # Test the connection with timeout
         await mongodb_client.admin.command('ping')
-        logger.info(f"Connected to MongoDB: {database_name}")
+        database = mongodb_client[database_name]
+        logger.info(f"✅ Connected to MongoDB: {database_name}")
+        
     except Exception as e:
-        logger.error(f"Could not connect to MongoDB: {e}")
-        raise
+        logger.warning(f"⚠️ MongoDB connection failed: {e}")
+        logger.warning("⚠️ API will run WITHOUT database persistence")
+        # Don't raise - let the API start anyway
+        mongodb_client = None
+        database = None
 
 async def close_mongo_connection():
     """Close MongoDB connection when application shuts down"""
@@ -51,5 +52,5 @@ async def close_mongo_connection():
         logger.info("Closed MongoDB connection")
 
 def get_database():
-    """Get the database instance"""
+    """Get the database instance - may return None"""
     return database
