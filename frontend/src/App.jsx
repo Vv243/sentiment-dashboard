@@ -93,7 +93,15 @@ function App() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Enter text to analyze... (e.g., 'I love this product! It's amazing!')"
+            onKeyDown={(e) => {
+              // Submit on Enter (without Shift)
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault() // Prevent new line
+                analyzeSentiment(e) // Submit form
+              }
+              // Shift+Enter allows new line (default behavior)
+            }}
+            placeholder="Enter text to analyze... (Press Enter to analyze, Shift+Enter for new line)"
             rows="6"
             className="text-input"
           />
