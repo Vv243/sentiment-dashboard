@@ -102,47 +102,44 @@ async def analyze_sentiment(request: SentimentRequest):
 
 @router.get("/history")
 async def get_sentiment_history(limit: int = 10):
-    """
-    Get recent sentiment analysis history.
-    
-    Args:
-        limit: Number of recent analyses to return (default: 10, max: 100)
-    
-    Returns list of past sentiment analyses, most recent first.
-    """
+    """Get recent sentiment analysis history."""
     logger.info(f"📊 Fetching sentiment history (limit: {limit})")
     
+    # Validate limit
+    if limit < 1:
+        limit = 10
+    elif limit > 100:
+        limit = 100
+    
+    db = get_database()
+    
+    # If database unavailable, return empty gracefully
+    if db is None:
+        logger.warning("⚠️ Database not available")
+        return {
+            "count": 0,
+            "limit": limit,
+            "analyses": []
+        }
+    
     try:
-        # Validate limit
-        if limit < 1:
-            limit = 10
-        elif limit > 100:
-            limit = 100
-        
-        db = get_database()
-        if db is None:
-            raise HTTPException(status_code=503, detail="Database not available")
-        
-        # Get recent analyses, sorted by timestamp (newest first)
+        # Get recent analyses
         cursor = db.sentiment_analyses.find().sort("timestamp", -1).limit(limit)
-        
-        # Convert cursor to list and handle MongoDB's _id field
         analyses = []
         async for doc in cursor:
-            # Convert MongoDB _id to string
             doc['_id'] = str(doc['_id'])
             analyses.append(doc)
         
-        logger.info(f"📤 Returning {len(analyses)} sentiment analyses")
-        
+        logger.info(f"📤 Returning {len(analyses)} analyses")
         return {
             "count": len(analyses),
             "limit": limit,
             "analyses": analyses
         }
-    
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"❌ Error fetching history: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching history: {str(e)}")
+        logger.error(f"❌ Error: {e}")
+        return {
+            "count": 0,
+            "limit": limit,
+            "analyses": []
+        }
