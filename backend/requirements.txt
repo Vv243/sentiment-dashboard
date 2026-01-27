@@ -6,7 +6,6 @@ pydantic-settings==2.6.1
 
 # Database - PostgreSQL (replaced Motor/MongoDB)
 psycopg2-binary==2.9.9
-asyncpg==0.29.0
 
 # Sentiment Analysis
 vaderSentiment==3.3.2

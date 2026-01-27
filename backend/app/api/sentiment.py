@@ -5,7 +5,7 @@ Sentiment analysis API endpoints.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from app.services.sentiment_analyzer import sentiment_analyzer
-from app.database import get_database
+from app.database import get_pool  # CHANGED: get_pool instead of get_database
 from datetime import datetime
 import logging
 
@@ -34,7 +34,7 @@ class SentimentResponse(BaseModel):
     scores: dict
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     saved_to_db: bool = False
-    moderation: dict = Field(default_factory=dict)  # NEW: Add this line
+    moderation: dict = Field(default_factory=dict)
     
     class Config:
         json_schema_extra = {
@@ -65,7 +65,7 @@ async def analyze_sentiment(request: SentimentRequest):
     Analyze sentiment of text using VADER.
     
     Returns sentiment classification and scores.
-    Saves the result to MongoDB for history tracking.
+    Saves the result to PostgreSQL for history tracking.
     """
     logger.info(f"📥 Received sentiment analysis request")
     
@@ -76,24 +76,39 @@ async def analyze_sentiment(request: SentimentRequest):
     timestamp = datetime.utcnow()
     result['timestamp'] = timestamp
     
-    # Save to MongoDB
+    # Save to PostgreSQL
     saved_to_db = False
     try:
-        db = get_database()
-        if db is not None:
-            # Create document to save
-            sentiment_record = {
-                "text": request.text,
-                "sentiment": result['sentiment'],
-                "emoji": result['emoji'],
-                "scores": result['scores'],
-                "timestamp": timestamp
-            }
-            
-            # Insert into 'sentiment_analyses' collection
-            await db.sentiment_analyses.insert_one(sentiment_record)
-            saved_to_db = True
-            logger.info(f"💾 Saved sentiment analysis to MongoDB")
+        pool = get_pool()
+        if pool is not None:
+            conn = pool.getconn()
+            try:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO sentiment_analyses 
+                    (text, sentiment, emoji, positive, negative, neutral, compound, 
+                     timestamp, flagged, moderation_reason, moderation_severity)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ''',
+                    (
+                        request.text,
+                        result['sentiment'],
+                        result['emoji'],
+                        result['scores']['positive'],
+                        result['scores']['negative'],
+                        result['scores']['neutral'],
+                        result['scores']['compound'],
+                        timestamp,
+                        result['moderation']['flagged'],
+                        result['moderation']['reason'],
+                        result['moderation']['severity']
+                    )
+                )
+                conn.commit()
+                saved_to_db = True
+                logger.info(f"💾 Saved sentiment analysis to PostgreSQL")
+            finally:
+                pool.putconn(conn)
         else:
             logger.warning("⚠️ Database not available, skipping save")
     except Exception as e:
@@ -106,6 +121,7 @@ async def analyze_sentiment(request: SentimentRequest):
     
     return result
 
+
 @router.get("/history")
 async def get_sentiment_history(limit: int = 10):
     """Get recent sentiment analysis history."""
@@ -117,10 +133,10 @@ async def get_sentiment_history(limit: int = 10):
     elif limit > 100:
         limit = 100
     
-    db = get_database()
+    pool = get_pool()
     
     # If database unavailable, return empty gracefully
-    if db is None:
+    if pool is None:
         logger.warning("⚠️ Database not available")
         return {
             "count": 0,
@@ -129,19 +145,53 @@ async def get_sentiment_history(limit: int = 10):
         }
     
     try:
-        # Get recent analyses
-        cursor = db.sentiment_analyses.find().sort("timestamp", -1).limit(limit)
-        analyses = []
-        async for doc in cursor:
-            doc['_id'] = str(doc['_id'])
-            analyses.append(doc)
-        
-        logger.info(f"📤 Returning {len(analyses)} analyses")
-        return {
-            "count": len(analyses),
-            "limit": limit,
-            "analyses": analyses
-        }
+        conn = pool.getconn()
+        try:
+            cursor = conn.cursor()
+            
+            # Get recent analyses with SQL query
+            cursor.execute('''
+                SELECT id, text, sentiment, emoji, 
+                       positive, negative, neutral, compound,
+                       timestamp, flagged, moderation_reason, moderation_severity
+                FROM sentiment_analyses
+                ORDER BY timestamp DESC
+                LIMIT %s
+            ''', (limit,))
+            
+            rows = cursor.fetchall()
+            
+            # Convert to list of dicts
+            analyses = []
+            for row in rows:
+                analyses.append({
+                    "id": row[0],
+                    "text": row[1],
+                    "sentiment": row[2],
+                    "emoji": row[3],
+                    "scores": {
+                        "positive": float(row[4]),
+                        "negative": float(row[5]),
+                        "neutral": float(row[6]),
+                        "compound": float(row[7])
+                    },
+                    "timestamp": row[8].isoformat(),
+                    "moderation": {
+                        "flagged": row[9],
+                        "reason": row[10],
+                        "severity": row[11]
+                    }
+                })
+            
+            logger.info(f"📤 Returning {len(analyses)} analyses")
+            return {
+                "count": len(analyses),
+                "limit": limit,
+                "analyses": analyses
+            }
+        finally:
+            pool.putconn(conn)
+            
     except Exception as e:
         logger.error(f"❌ Error: {e}")
         return {

@@ -1,7 +1,8 @@
 """
-PostgreSQL database connection and management.
+PostgreSQL database connection using psycopg2 (synchronous).
 """
-import asyncpg
+import psycopg2
+from psycopg2.pool import SimpleConnectionPool
 import logging
 import os
 from dotenv import load_dotenv
@@ -12,9 +13,9 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # PostgreSQL connection pool
-pool: asyncpg.Pool = None
+pool: SimpleConnectionPool = None
 
-async def connect_to_postgres():
+def connect_to_postgres():
     """Connect to PostgreSQL when the application starts"""
     global pool
     try:
@@ -25,33 +26,40 @@ async def connect_to_postgres():
             logger.warning("⚠️ DATABASE_URL not found - running without database")
             return
         
-        # Create connection pool
+        # Create connection pool (synchronous)
         logger.info("📦 Attempting PostgreSQL connection...")
-        pool = await asyncpg.create_pool(
-            database_url,
-            min_size=1,
-            max_size=10,
-            command_timeout=60
+        pool = SimpleConnectionPool(
+            1,  # min connections
+            10,  # max connections
+            database_url
         )
         
-        # Test the connection and get version
-        async with pool.acquire() as conn:
-            version = await conn.fetchval('SELECT version()')
+        # Test the connection
+        conn = pool.getconn()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('SELECT version()')
+            version = cursor.fetchone()[0]
             logger.info(f"✅ Connected to PostgreSQL")
             logger.info(f"📊 Database version: {version[:50]}...")
             
-            # Create table if it doesn't exist
-            await create_tables(conn)
+            # Create tables
+            create_tables(conn)
+            conn.commit()
+        finally:
+            pool.putconn(conn)
         
     except Exception as e:
         logger.warning(f"⚠️ PostgreSQL connection failed: {e}")
         logger.warning("⚠️ API will run WITHOUT database persistence")
         pool = None
 
-async def create_tables(conn):
+def create_tables(conn):
     """Create sentiment_analyses table if it doesn't exist"""
     try:
-        await conn.execute('''
+        cursor = conn.cursor()
+        
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS sentiment_analyses (
                 id SERIAL PRIMARY KEY,
                 text TEXT NOT NULL,
@@ -69,7 +77,7 @@ async def create_tables(conn):
         ''')
         
         # Create index on timestamp for faster queries
-        await conn.execute('''
+        cursor.execute('''
             CREATE INDEX IF NOT EXISTS idx_timestamp 
             ON sentiment_analyses(timestamp DESC)
         ''')
@@ -78,11 +86,11 @@ async def create_tables(conn):
     except Exception as e:
         logger.error(f"❌ Error creating tables: {e}")
 
-async def close_postgres_connection():
+def close_postgres_connection():
     """Close PostgreSQL connection when application shuts down"""
     global pool
     if pool:
-        await pool.close()
+        pool.closeall()
         logger.info("Closed PostgreSQL connection")
 
 def get_pool():

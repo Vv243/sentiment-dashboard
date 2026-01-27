@@ -8,8 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 import logging
 
-# Import database functions for Day 3
-from app.database import connect_to_mongo, close_mongo_connection
+# Import database functions - UPDATED FOR POSTGRESQL
+from app.database import connect_to_postgres, close_postgres_connection  # FIXED THIS LINE!
 
 
 # Set up logging
@@ -48,7 +48,7 @@ app.include_router(
 @app.get("/")
 async def root():
     """Welcome endpoint"""
-    logger.info("📍 Root endpoint accessed")  # ← Keep this one!
+    logger.info("📍 Root endpoint accessed")
     return {
         "message": "Welcome to Sentiment Analysis API! 🚀",
         "version": "1.0.0",
@@ -76,13 +76,13 @@ async def startup_event():
     logger.info(f"📝 Documentation available at: /docs")
     logger.info(f"🏥 Health check available at: /health")
     
-    # Initialize content moderator (force import)
+    # Initialize content moderator
     from app.services.content_moderator import content_moderator
     logger.info(f"🛡️ Content moderator ready: {len(content_moderator.harmful_patterns)} patterns")
     
-    # Day 3: Connect to MongoDB
-    logger.info("📦 Connecting to MongoDB...")
-    await connect_to_mongo()
+    # Connect to PostgreSQL (SYNCHRONOUS - no await)
+    logger.info("📦 Connecting to PostgreSQL...")
+    connect_to_postgres()  # NO await - this is synchronous!
     
     logger.info("✅ Startup complete!")
 
@@ -92,8 +92,8 @@ async def shutdown_event():
     """Runs when the application shuts down"""
     logger.info("👋 Shutting down Sentiment Analysis API...")
     
-    # Day 3: Close MongoDB connection
-    logger.info("📦 Closing MongoDB connection...")
-    await close_mongo_connection()
+    # Close PostgreSQL connection (SYNCHRONOUS - no await)
+    logger.info("📦 Closing PostgreSQL connection...")
+    close_postgres_connection()  # NO await - this is synchronous!
     
     logger.info("✅ Shutdown complete!")
