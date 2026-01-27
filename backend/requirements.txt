@@ -4,8 +4,8 @@ uvicorn==0.32.1
 pydantic==2.10.3
 pydantic-settings==2.6.1
 
-# Database - PostgreSQL (replaced Motor/MongoDB)
-psycopg2-binary==2.9.9
+# Database - PostgreSQL (pure Python, no compilation needed!)
+pg8000==1.31.2
 
 # Sentiment Analysis
 vaderSentiment==3.3.2

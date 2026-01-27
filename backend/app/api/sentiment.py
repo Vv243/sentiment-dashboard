@@ -5,7 +5,7 @@ Sentiment analysis API endpoints.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from app.services.sentiment_analyzer import sentiment_analyzer
-from app.database import get_pool  # CHANGED: get_pool instead of get_database
+from app.database import get_connection  # UPDATED for pg8000
 from datetime import datetime
 import logging
 
@@ -76,126 +76,31 @@ async def analyze_sentiment(request: SentimentRequest):
     timestamp = datetime.utcnow()
     result['timestamp'] = timestamp
     
-    # Save to PostgreSQL
+    # Save to PostgreSQL using pg8000
     saved_to_db = False
     try:
-        pool = get_pool()
-        if pool is not None:
-            conn = pool.getconn()
-            try:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    INSERT INTO sentiment_analyses 
-                    (text, sentiment, emoji, positive, negative, neutral, compound, 
-                     timestamp, flagged, moderation_reason, moderation_severity)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ''',
-                    (
-                        request.text,
-                        result['sentiment'],
-                        result['emoji'],
-                        result['scores']['positive'],
-                        result['scores']['negative'],
-                        result['scores']['neutral'],
-                        result['scores']['compound'],
-                        timestamp,
-                        result['moderation']['flagged'],
-                        result['moderation']['reason'],
-                        result['moderation']['severity']
-                    )
-                )
-                conn.commit()
-                saved_to_db = True
-                logger.info(f"💾 Saved sentiment analysis to PostgreSQL")
-            finally:
-                pool.putconn(conn)
+        conn = get_connection()
+        if conn is not None:
+            conn.run('''
+                INSERT INTO sentiment_analyses 
+                (text, sentiment, emoji, positive, negative, neutral, compound, 
+                 timestamp, flagged, moderation_reason, moderation_severity)
+                VALUES (:text, :sentiment, :emoji, :positive, :negative, :neutral, :compound, 
+                        :timestamp, :flagged, :reason, :severity)
+            ''',
+                text=request.text,
+                sentiment=result['sentiment'],
+                emoji=result['emoji'],
+                positive=result['scores']['positive'],
+                negative=result['scores']['negative'],
+                neutral=result['scores']['neutral'],
+                compound=result['scores']['compound'],
+                timestamp=timestamp,
+                flagged=result['moderation']['flagged'],
+                reason=result['moderation']['reason'],
+                severity=result['moderation']['severity']
+            )
+            saved_to_db = True
+            logger.info(f"💾 Saved sentiment analysis to PostgreSQL")
         else:
-            logger.warning("⚠️ Database not available, skipping save")
-    except Exception as e:
-        logger.error(f"❌ Error saving to database: {e}")
-        # Don't fail the request if database save fails
-    
-    result['saved_to_db'] = saved_to_db
-    
-    logger.info(f"📤 Returning result: {result['sentiment']}")
-    
-    return result
-
-
-@router.get("/history")
-async def get_sentiment_history(limit: int = 10):
-    """Get recent sentiment analysis history."""
-    logger.info(f"📊 Fetching sentiment history (limit: {limit})")
-    
-    # Validate limit
-    if limit < 1:
-        limit = 10
-    elif limit > 100:
-        limit = 100
-    
-    pool = get_pool()
-    
-    # If database unavailable, return empty gracefully
-    if pool is None:
-        logger.warning("⚠️ Database not available")
-        return {
-            "count": 0,
-            "limit": limit,
-            "analyses": []
-        }
-    
-    try:
-        conn = pool.getconn()
-        try:
-            cursor = conn.cursor()
-            
-            # Get recent analyses with SQL query
-            cursor.execute('''
-                SELECT id, text, sentiment, emoji, 
-                       positive, negative, neutral, compound,
-                       timestamp, flagged, moderation_reason, moderation_severity
-                FROM sentiment_analyses
-                ORDER BY timestamp DESC
-                LIMIT %s
-            ''', (limit,))
-            
-            rows = cursor.fetchall()
-            
-            # Convert to list of dicts
-            analyses = []
-            for row in rows:
-                analyses.append({
-                    "id": row[0],
-                    "text": row[1],
-                    "sentiment": row[2],
-                    "emoji": row[3],
-                    "scores": {
-                        "positive": float(row[4]),
-                        "negative": float(row[5]),
-                        "neutral": float(row[6]),
-                        "compound": float(row[7])
-                    },
-                    "timestamp": row[8].isoformat(),
-                    "moderation": {
-                        "flagged": row[9],
-                        "reason": row[10],
-                        "severity": row[11]
-                    }
-                })
-            
-            logger.info(f"📤 Returning {len(analyses)} analyses")
-            return {
-                "count": len(analyses),
-                "limit": limit,
-                "analyses": analyses
-            }
-        finally:
-            pool.putconn(conn)
-            
-    except Exception as e:
-        logger.error(f"❌ Error: {e}")
-        return {
-            "count": 0,
-            "limit": limit,
-            "analyses": []
-        }
+            logger.warning(

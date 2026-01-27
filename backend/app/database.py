@@ -1,8 +1,7 @@
 """
-PostgreSQL database connection using psycopg2 (synchronous).
+PostgreSQL database connection using pg8000 (pure Python).
 """
-import psycopg2
-from psycopg2.pool import SimpleConnectionPool
+import pg8000.native
 import logging
 import os
 from dotenv import load_dotenv
@@ -12,12 +11,12 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# PostgreSQL connection pool
-pool: SimpleConnectionPool = None
+# Database connection
+connection = None
 
 def connect_to_postgres():
     """Connect to PostgreSQL when the application starts"""
-    global pool
+    global connection
     try:
         # Get PostgreSQL URL from environment
         database_url = os.getenv("DATABASE_URL")
@@ -26,40 +25,39 @@ def connect_to_postgres():
             logger.warning("⚠️ DATABASE_URL not found - running without database")
             return
         
-        # Create connection pool (synchronous)
+        # Parse the connection URL
+        # Format: postgresql://user:password@host:port/database
         logger.info("📦 Attempting PostgreSQL connection...")
-        pool = SimpleConnectionPool(
-            1,  # min connections
-            10,  # max connections
-            database_url
+        
+        # pg8000 uses individual parameters, parse the URL
+        import urllib.parse
+        result = urllib.parse.urlparse(database_url)
+        
+        connection = pg8000.native.Connection(
+            user=result.username,
+            password=result.password,
+            host=result.hostname,
+            port=result.port or 5432,
+            database=result.path[1:]  # Remove leading /
         )
         
         # Test the connection
-        conn = pool.getconn()
-        try:
-            cursor = conn.cursor()
-            cursor.execute('SELECT version()')
-            version = cursor.fetchone()[0]
-            logger.info(f"✅ Connected to PostgreSQL")
-            logger.info(f"📊 Database version: {version[:50]}...")
-            
-            # Create tables
-            create_tables(conn)
-            conn.commit()
-        finally:
-            pool.putconn(conn)
+        version = connection.run("SELECT version()")[0][0]
+        logger.info(f"✅ Connected to PostgreSQL")
+        logger.info(f"📊 Database version: {version[:50]}...")
+        
+        # Create tables
+        create_tables()
         
     except Exception as e:
         logger.warning(f"⚠️ PostgreSQL connection failed: {e}")
         logger.warning("⚠️ API will run WITHOUT database persistence")
-        pool = None
+        connection = None
 
-def create_tables(conn):
+def create_tables():
     """Create sentiment_analyses table if it doesn't exist"""
     try:
-        cursor = conn.cursor()
-        
-        cursor.execute('''
+        connection.run('''
             CREATE TABLE IF NOT EXISTS sentiment_analyses (
                 id SERIAL PRIMARY KEY,
                 text TEXT NOT NULL,
@@ -77,7 +75,7 @@ def create_tables(conn):
         ''')
         
         # Create index on timestamp for faster queries
-        cursor.execute('''
+        connection.run('''
             CREATE INDEX IF NOT EXISTS idx_timestamp 
             ON sentiment_analyses(timestamp DESC)
         ''')
@@ -88,11 +86,11 @@ def create_tables(conn):
 
 def close_postgres_connection():
     """Close PostgreSQL connection when application shuts down"""
-    global pool
-    if pool:
-        pool.closeall()
+    global connection
+    if connection:
+        connection.close()
         logger.info("Closed PostgreSQL connection")
 
-def get_pool():
-    """Get the connection pool - may return None"""
-    return pool
+def get_connection():
+    """Get the database connection - may return None"""
+    return connection
