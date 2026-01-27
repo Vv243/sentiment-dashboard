@@ -11,25 +11,40 @@ function App() {
   const [error, setError] = useState(null)
   const [history, setHistory] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [historyLimit, setHistoryLimit] = useState(5) // NEW: Start with 5
+  const [hasMore, setHasMore] = useState(false) // NEW: Track if more records exist
 
-  // Fetch history when component mounts
+  // Fetch history when component mounts or limit changes
   useEffect(() => {
     fetchHistory()
-  }, [])
+  }, [historyLimit]) // CHANGED: Also fetch when limit changes
 
   const fetchHistory = async () => {
     setLoadingHistory(true)
     try {
-      const response = await fetch(`${API_URL}/api/v1/sentiment/history?limit=10`)
+      // Fetch one more than limit to check if there are more records
+      const response = await fetch(`${API_URL}/api/v1/sentiment/history?limit=${historyLimit + 1}`)
       if (response.ok) {
         const data = await response.json()
-        setHistory(data.analyses)
+
+        // Check if there are more records
+        if (data.analyses && data.analyses.length > historyLimit) {
+          setHasMore(true)
+          setHistory(data.analyses.slice(0, historyLimit)) // Show only requested amount
+        } else {
+          setHasMore(false)
+          setHistory(data.analyses || [])
+        }
       }
     } catch (err) {
       console.error('Failed to fetch history:', err)
     } finally {
       setLoadingHistory(false)
     }
+  }
+
+  const loadMore = () => {
+    setHistoryLimit((prev) => prev + 5) // Load 5 more
   }
 
   const analyzeSentiment = async (e) => {
@@ -58,11 +73,10 @@ function App() {
       }
 
       const data = await response.json()
-      console.log('🔍 API Response:', data) // ADD THIS LINE
-      console.log('🔍 Moderation data:', data.moderation) // ADD THIS TOO
       setResult(data)
 
       // Refresh history after new analysis
+      setHistoryLimit(5) // Reset to show 5
       fetchHistory()
 
       // Clear input
@@ -119,12 +133,13 @@ function App() {
           <div className="result-card">
             <h2>Latest Analysis</h2>
 
-            {/* Is this warning code here? */}
+            {/* Show warning if content is harmful */}
             {result.moderation?.flagged && (
               <div className="moderation-warning">
                 ⚠️ <strong>Content Moderation Alert:</strong> {result.moderation.reason}
               </div>
             )}
+
             <div className="sentiment-display">
               <span className="emoji">{result.emoji}</span>
               <span className="sentiment-label">{result.sentiment}</span>
@@ -163,7 +178,14 @@ function App() {
         <div className="history-section">
           <div className="history-header">
             <h2>📊 Recent Analyses</h2>
-            <button onClick={fetchHistory} className="refresh-button" disabled={loadingHistory}>
+            <button
+              onClick={() => {
+                setHistoryLimit(5)
+                fetchHistory()
+              }}
+              className="refresh-button"
+              disabled={loadingHistory}
+            >
               {loadingHistory ? '⏳' : '🔄'} Refresh
             </button>
           </div>
@@ -173,24 +195,37 @@ function App() {
           ) : history.length === 0 ? (
             <p className="empty-text">No analyses yet. Try analyzing some text above!</p>
           ) : (
-            <div className="history-list">
-              {history.map((item, index) => (
-                <div key={item._id || index} className="history-item">
-                  <div className="history-header-row">
-                    <span className="history-emoji">{item.emoji}</span>
-                    <span className={`history-sentiment ${item.sentiment}`}>{item.sentiment}</span>
-                    <span className="history-date">{formatDate(item.timestamp)}</span>
+            <>
+              <div className="history-list">
+                {history.map((item, index) => (
+                  <div key={item._id || item.id || index} className="history-item">
+                    <div className="history-header-row">
+                      <span className="history-emoji">{item.emoji}</span>
+                      <span className={`history-sentiment ${item.sentiment}`}>
+                        {item.sentiment}
+                      </span>
+                      <span className="history-date">{formatDate(item.timestamp)}</span>
+                    </div>
+                    <p className="history-text">"{item.text}"</p>
+                    <div className="history-scores">
+                      <span>😊 {(item.scores.positive * 100).toFixed(0)}%</span>
+                      <span>😐 {(item.scores.neutral * 100).toFixed(0)}%</span>
+                      <span>😞 {(item.scores.negative * 100).toFixed(0)}%</span>
+                      <span>📊 {item.scores.compound.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <p className="history-text">"{item.text}"</p>
-                  <div className="history-scores">
-                    <span>😊 {(item.scores.positive * 100).toFixed(0)}%</span>
-                    <span>😐 {(item.scores.neutral * 100).toFixed(0)}%</span>
-                    <span>😞 {(item.scores.negative * 100).toFixed(0)}%</span>
-                    <span>📊 {item.scores.compound.toFixed(2)}</span>
-                  </div>
+                ))}
+              </div>
+
+              {/* NEW: View More Button */}
+              {hasMore && (
+                <div className="view-more-container">
+                  <button onClick={loadMore} className="view-more-button" disabled={loadingHistory}>
+                    {loadingHistory ? 'Loading...' : 'View More'}
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
