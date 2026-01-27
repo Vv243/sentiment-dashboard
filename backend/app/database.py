@@ -94,3 +94,38 @@ def close_postgres_connection():
 def get_connection():
     """Get the database connection - may return None"""
     return connection
+
+def cleanup_old_records(keep_last=10000):
+    """
+    Keep only the most recent N records.
+    Automatically removes older records to prevent database from filling up.
+    
+    Args:
+        keep_last: Number of most recent records to keep (default: 10000)
+    """
+    global connection
+    
+    if connection is None:
+        return
+    
+    try:
+        # Count total records first
+        count_result = connection.run('SELECT COUNT(*) FROM sentiment_analyses')
+        total_records = count_result[0][0]
+        
+        # Only cleanup if we exceed the limit
+        if total_records > keep_last:
+            # Delete all but the last N records
+            connection.run('''
+                DELETE FROM sentiment_analyses
+                WHERE id NOT IN (
+                    SELECT id FROM sentiment_analyses
+                    ORDER BY timestamp DESC
+                    LIMIT :keep_last
+                )
+            ''', keep_last=keep_last)
+            
+            deleted = total_records - keep_last
+            logger.info(f"🧹 Cleaned up {deleted} old records, keeping last {keep_last}")
+    except Exception as e:
+        logger.error(f"❌ Error cleaning up records: {e}")

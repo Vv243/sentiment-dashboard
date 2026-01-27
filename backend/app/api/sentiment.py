@@ -5,9 +5,10 @@ Sentiment analysis API endpoints.
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from app.services.sentiment_analyzer import sentiment_analyzer
-from app.database import get_connection  # UPDATED for pg8000
+from app.database import get_connection, cleanup_old_records  # ADDED cleanup_old_records
 from datetime import datetime
 import logging
+import random  # For periodic cleanup
 
 logger = logging.getLogger(__name__)
 
@@ -102,8 +103,13 @@ async def analyze_sentiment(request: SentimentRequest):
             )
             saved_to_db = True
             logger.info(f"💾 Saved sentiment analysis to PostgreSQL")
+            
+            # Periodic cleanup: 10% chance to run cleanup after each save
+            # This prevents running cleanup on EVERY request (performance)
+            if random.randint(1, 10) == 1:  # 10% chance
+                cleanup_old_records(keep_last=10000)
         else:
-            logger.warning("⚠️ Database not available, skipping save")  # FIXED!
+            logger.warning("⚠️ Database not available, skipping save")
     except Exception as e:
         logger.error(f"❌ Error saving to database: {e}")
         # Don't fail the request if database save fails
