@@ -217,12 +217,30 @@ function App() {
                 ))}
               </div>
 
-              {/* NEW: View More Button */}
-              {hasMore && (
+              {/* NEW: View More / View Less Buttons */}
+              {history.length > 0 && (
                 <div className="view-more-container">
-                  <button onClick={loadMore} className="view-more-button" disabled={loadingHistory}>
-                    {loadingHistory ? 'Loading...' : 'View More'}
-                  </button>
+                  {/* Show View Less if we're showing more than 5 */}
+                  {historyLimit > 5 && (
+                    <button
+                      onClick={() => setHistoryLimit(5)}
+                      className="view-less-button"
+                      disabled={loadingHistory}
+                    >
+                      View Less
+                    </button>
+                  )}
+
+                  {/* Show View More if there are more records to load */}
+                  {hasMore && (
+                    <button
+                      onClick={loadMore}
+                      className="view-more-button"
+                      disabled={loadingHistory}
+                    >
+                      {loadingHistory ? 'Loading...' : 'View More'}
+                    </button>
+                  )}
                 </div>
               )}
             </>
