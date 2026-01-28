@@ -66,7 +66,7 @@ async def analyze_sentiment(request: SentimentRequest):
     Analyze sentiment of text using VADER.
     
     Returns sentiment classification and scores.
-    Saves the result to PostgreSQL for history tracking.
+    Saves the result to PostgreSQL for history tracking (except harmful content).
     """
     logger.info(f"📥 Received sentiment analysis request")
     
@@ -77,11 +77,12 @@ async def analyze_sentiment(request: SentimentRequest):
     timestamp = datetime.utcnow()
     result['timestamp'] = timestamp
     
-    # Save to PostgreSQL using pg8000
+    # Save to PostgreSQL using pg8000 (skip if harmful)
     saved_to_db = False
     try:
         conn = get_connection()
-        if conn is not None:
+        # Don't save harmful content to database
+        if conn is not None and not result['moderation']['flagged']:
             conn.run('''
                 INSERT INTO sentiment_analyses 
                 (text, sentiment, emoji, positive, negative, neutral, compound, 
@@ -105,9 +106,10 @@ async def analyze_sentiment(request: SentimentRequest):
             logger.info(f"💾 Saved sentiment analysis to PostgreSQL")
             
             # Periodic cleanup: 10% chance to run cleanup after each save
-            # This prevents running cleanup on EVERY request (performance)
-            if random.randint(1, 10) == 1:  # 10% chance
+            if random.randint(1, 10) == 1:
                 cleanup_old_records(keep_last=10000)
+        elif result['moderation']['flagged']:
+            logger.warning("⚠️ Harmful content not saved to database")
         else:
             logger.warning("⚠️ Database not available, skipping save")
     except Exception as e:

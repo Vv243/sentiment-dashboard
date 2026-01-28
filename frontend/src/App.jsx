@@ -4,6 +4,81 @@ import './App.css'
 // API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
+// Comprehensive censor function - replaces all harmful content with asterisks
+const censorText = (text, isFlagged) => {
+  if (!isFlagged) return text
+
+  // Comprehensive list of harmful patterns to censor
+  const harmfulPatterns = [
+    // Self-harm and suicide
+    /\b(kill|hurt|harm)\s+(your)?self\b/gi,
+    /\bcommit\s+suicide\b/gi,
+    /\bend\s+(your\s+)?(life|it\s+all)\b/gi,
+    /\bsuicide\b/gi,
+    /\b(hang|shoot|drown)\s+yourself\b/gi,
+    /\bjump\s+off\b/gi,
+    /\bslit\s+your\b/gi,
+    /\boverdose\b/gi,
+    /\bkys\b/gi,
+
+    // Death and violence
+    /\b(hope you|wish you were)\s+d[i!1*]e?[d]?\b/gi,
+    /\byou should die\b/gi,
+    /\bgo die\b/gi,
+
+    // Racial slurs - N-word variations
+    /\bn[i!1*]+gg?[ae3][rhz]*\b/gi,
+    /\bn[i!1*]+gg?[aeou3]+\b/gi,
+
+    // Other racial slurs
+    /\bch[i!1*]nk\b/gi,
+    /\bsp[i!1*]c\b/gi,
+    /\bwetb[a@]ck\b/gi,
+    /\bg[o0][o0]k\b/gi,
+    /\bk[i!1*]ke\b/gi,
+    /\brag\s*head\b/gi,
+    /\bsand\s*n[i!1*]gg?[ae3]r\b/gi,
+    /\bbeaner\b/gi,
+    /\bcamel\s*jockey\b/gi,
+
+    // Homophobic slurs
+    /\bf[a@4]gg?[o0]t\b/gi,
+    /\bd[y1]ke\b/gi,
+    /\btr[a@4]nny\b/gi,
+    /\bqu[e3][e3]r\b(?!\s+(studies|theory|community))/gi, // Exclude academic/positive uses
+
+    // Misogynistic slurs
+    /\bc[u*][n*]t\b/gi,
+    /\bwh[o0]re\b/gi,
+    /\bsl[u*]t\b/gi,
+    /\bb[i!1*]tch\b/gi,
+
+    // Ableist slurs
+    /\bret[a@4]rd(ed)?\b/gi,
+    /\bm[o0]ng?[o0]l[o0]id\b/gi,
+    /\bcr[i!1*]pple\b/gi,
+    /\bspaz\b/gi,
+
+    // Extreme insults
+    /\b(worthless|useless|garbage|trash)\b/gi,
+    /\bwaste of\b/gi,
+  ]
+
+  let censoredText = text
+
+  // Replace each harmful pattern with asterisks
+  harmfulPatterns.forEach((pattern) => {
+    censoredText = censoredText.replace(pattern, (match) => {
+      // Keep first and last character visible, replace middle with asterisks
+      if (match.length <= 2) return '**'
+      if (match.length === 3) return match[0] + '*' + match[2]
+      return match[0] + '*'.repeat(match.length - 2) + match[match.length - 1]
+    })
+  })
+
+  return censoredText
+}
+
 function App() {
   const [text, setText] = useState('')
   const [result, setResult] = useState(null)
@@ -169,7 +244,7 @@ function App() {
 
             <div className="analyzed-text">
               <h3>Analyzed Text</h3>
-              <p>"{result.text}"</p>
+              <p>"{censorText(result.text, result.moderation?.flagged)}"</p>
             </div>
           </div>
         )}
@@ -206,7 +281,9 @@ function App() {
                       </span>
                       <span className="history-date">{formatDate(item.timestamp)}</span>
                     </div>
-                    <p className="history-text">"{item.text}"</p>
+                    <p className="history-text">
+                      "{censorText(item.text, item.moderation?.flagged)}"
+                    </p>
                     <div className="history-scores">
                       <span>😊 {(item.scores.positive * 100).toFixed(0)}%</span>
                       <span>😐 {(item.scores.neutral * 100).toFixed(0)}%</span>

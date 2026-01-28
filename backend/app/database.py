@@ -98,7 +98,7 @@ def get_connection():
 def cleanup_old_records(keep_last=10000):
     """
     Keep only the most recent N records.
-    Automatically removes older records to prevent database from filling up.
+    Automatically removes older records AND harmful content to prevent database from filling up.
     
     Args:
         keep_last: Number of most recent records to keep (default: 10000)
@@ -109,13 +109,19 @@ def cleanup_old_records(keep_last=10000):
         return
     
     try:
-        # Count total records first
+        # STEP 1: Delete ALL harmful content first (regardless of age)
+        harmful_count = connection.run('SELECT COUNT(*) FROM sentiment_analyses WHERE flagged = TRUE')[0][0]
+        if harmful_count > 0:
+            connection.run('DELETE FROM sentiment_analyses WHERE flagged = TRUE')
+            logger.info(f"🧹 Automatically deleted {harmful_count} harmful records")
+        
+        # STEP 2: Count total safe records
         count_result = connection.run('SELECT COUNT(*) FROM sentiment_analyses')
         total_records = count_result[0][0]
         
-        # Only cleanup if we exceed the limit
+        # STEP 3: Only cleanup old safe records if we exceed the limit
         if total_records > keep_last:
-            # Delete all but the last N records
+            # Delete all but the last N safe records
             connection.run('''
                 DELETE FROM sentiment_analyses
                 WHERE id NOT IN (
@@ -126,6 +132,6 @@ def cleanup_old_records(keep_last=10000):
             ''', keep_last=keep_last)
             
             deleted = total_records - keep_last
-            logger.info(f"🧹 Cleaned up {deleted} old records, keeping last {keep_last}")
+            logger.info(f"🧹 Cleaned up {deleted} old safe records, keeping last {keep_last}")
     except Exception as e:
         logger.error(f"❌ Error cleaning up records: {e}")
