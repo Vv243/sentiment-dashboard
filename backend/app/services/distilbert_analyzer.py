@@ -2,36 +2,43 @@
 DistilBERT sentiment analyzer - more accurate than VADER.
 Uses HuggingFace transformers for context-aware sentiment analysis.
 """
-from transformers import pipeline
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 class DistilBERTAnalyzer:
     """
     Sentiment analyzer using DistilBERT transformer model.
-    More accurate than VADER, especially for:
-    - Sarcasm detection
-    - Negation handling
-    - Slang and informal language
-    - Context understanding
+    
+    NOTE: Requires ~512MB RAM. May not work on free hosting tiers.
+    Falls back to error message if model cannot be loaded.
     """
     
     def __init__(self):
         """Initialize DistilBERT model (loads on first use)"""
         self._model = None
+        self._failed = False
         logger.info("🤖 DistilBERT analyzer initialized (lazy loading)")
     
     def _load_model(self):
         """Lazy load the model (only when first needed)"""
-        if self._model is None:
-            logger.info("📦 Loading DistilBERT model...")
-            self._model = pipeline(
-                "sentiment-analysis",
-                model="distilbert-base-uncased-finetuned-sst-2-english",
-                device=-1  # Use CPU (Render doesn't have GPU)
-            )
-            logger.info("✅ DistilBERT model loaded successfully")
+        if self._model is None and not self._failed:
+            try:
+                logger.info("📦 Loading DistilBERT model...")
+                from transformers import pipeline
+                
+                self._model = pipeline(
+                    "sentiment-analysis",
+                    model="distilbert-base-uncased-finetuned-sst-2-english",
+                    device=-1  # Use CPU
+                )
+                logger.info("✅ DistilBERT model loaded successfully")
+            except Exception as e:
+                logger.error(f"❌ Failed to load DistilBERT: {e}")
+                logger.error("⚠️ This usually means insufficient memory (need ~512MB)")
+                self._failed = True
+                
         return self._model
     
     def analyze(self, text: str) -> dict:
@@ -46,18 +53,49 @@ class DistilBERTAnalyzer:
         """
         logger.info(f"🤖 Analyzing with DistilBERT: {text[:50]}...")
         
+        # Try to load model
+        model = self._load_model()
+        
+        # If model failed to load, return fallback VADER-style response
+        if model is None:
+            logger.warning("⚠️ DistilBERT unavailable, using fallback")
+            from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+            vader = SentimentIntensityAnalyzer()
+            scores = vader.polarity_scores(text)
+            compound = scores['compound']
+            
+            if compound >= 0.05:
+                sentiment = 'positive'
+                emoji = '😊'
+            elif compound <= -0.05:
+                sentiment = 'negative'
+                emoji = '😞'
+            else:
+                sentiment = 'neutral'
+                emoji = '😐'
+            
+            return {
+                'text': text,
+                'sentiment': sentiment,
+                'emoji': emoji,
+                'scores': {
+                    'positive': round(scores['pos'], 3),
+                    'negative': round(scores['neg'], 3),
+                    'neutral': round(scores['neu'], 3),
+                    'compound': round(scores['compound'], 3)
+                },
+                'confidence': None,
+                'model': 'vader-fallback',  # Indicate fallback
+                'note': 'DistilBERT unavailable (insufficient memory)'
+            }
+        
         try:
-            # Load model if not already loaded
-            model = self._load_model()
+            # Get prediction from DistilBERT
+            result = model(text[:512])[0]
             
-            # Get prediction
-            result = model(text[:512])[0]  # DistilBERT max length: 512 tokens
+            label = result['label']
+            confidence = result['score']
             
-            # Extract label and confidence
-            label = result['label']  # 'POSITIVE' or 'NEGATIVE'
-            confidence = result['score']  # 0.0 to 1.0
-            
-            # Map to our format
             if label == 'POSITIVE':
                 sentiment = 'positive'
                 emoji = '😊'
@@ -69,17 +107,13 @@ class DistilBERTAnalyzer:
                 positive_score = 1 - confidence
                 negative_score = confidence
             
-            # Calculate neutral (middle ground)
-            # If confidence is low, it's more neutral
             neutral_score = 1 - confidence
             
-            # Normalize scores to sum to 1.0
             total = positive_score + negative_score + neutral_score
             positive_score /= total
             negative_score /= total
             neutral_score /= total
             
-            # Calculate compound score (-1 to 1)
             compound = (positive_score - negative_score)
             
             response = {
@@ -102,11 +136,11 @@ class DistilBERTAnalyzer:
             
         except Exception as e:
             logger.error(f"❌ DistilBERT error: {e}")
-            # Fallback to error response
             return {
                 'error': str(e),
                 'sentiment': 'error',
-                'emoji': '⚠️'
+                'emoji': '⚠️',
+                'model': 'error'
             }
 
 # Global instance
