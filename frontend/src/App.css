@@ -404,6 +404,108 @@ body {
   cursor: not-allowed;
 }
 
+/* Model Selector Styles */
+.model-selector {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+  border-radius: 12px;
+}
+
+.model-selector label {
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.model-dropdown {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.model-dropdown:hover {
+  border-color: #667eea;
+  transform: translateY(-1px);
+}
+
+.model-dropdown:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.model-info {
+  font-size: 0.875rem;
+  color: #718096;
+  font-style: italic;
+}
+
+/* Model Option Buttons */
+.model-options {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  max-width: 300px;
+}
+
+.model-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 120px;
+  flex: 1;
+}
+
+.model-option:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.model-option.active {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.model-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.model-name {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.125rem;
+}
+
+.model-time {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.model-option.active .model-time {
+  opacity: 0.9;
+}
+
+
 /* ============================================ */
 /* DARK MODE STYLES */
 /* ============================================ */
@@ -532,5 +634,68 @@ body {
 
   .history-scores span {
     background: #2d3748;
+  }
+
+   /* Model Selector - Dark Mode */
+  .model-selector {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+  }
+  
+  .model-selector label {
+    color: #e2e8f0;
+  }
+  
+  .model-info {
+    color: #a0aec0;
+  }
+
+  /* Model Option Buttons - Dark Mode */
+  .model-option {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  .model-option:hover {
+    border-color: #667eea;
+  }
+  
+  .model-option.active {
+    color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  /* View More/Less - Dark Mode */
+  .view-more-container {
+    border-top-color: #4a5568;
+  }
+  
+  .view-less-button {
+    background: #4a5568;
+  }
+  
+  .view-less-button:hover:not(:disabled) {
+    background: #2d3748;
+  }
+}
+
+/* Responsive Design for Model Selector */
+@media (max-width: 768px) {
+  .model-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .model-selector label {
+    text-align: center;
+  }
+  
+  .model-options {
+    width: 100%;
+  }
+  
+  .model-option {
+    min-width: 0;
   }
 }

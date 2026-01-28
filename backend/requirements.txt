@@ -1,15 +1,19 @@
-# Web Framework
+# FastAPI and server
 fastapi==0.115.5
 uvicorn==0.32.1
 pydantic==2.10.3
 pydantic-settings==2.6.1
 
-# Database - PostgreSQL (pure Python, no compilation needed!)
+# Database
 pg8000==1.31.2
 
 # Sentiment Analysis
 vaderSentiment==3.3.2
 
-# Utilities
+# Environment
 python-dotenv==1.0.1
 python-multipart==0.0.17
+
+# ML Models (updated versions with pre-built wheels)
+transformers>=4.40.0
+torch==2.10.0

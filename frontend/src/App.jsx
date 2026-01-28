@@ -88,6 +88,7 @@ function App() {
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [historyLimit, setHistoryLimit] = useState(5) // NEW: Start with 5
   const [hasMore, setHasMore] = useState(false) // NEW: Track if more records exist
+  const [selectedModel, setSelectedModel] = useState('vader') // Model selection state
 
   // Fetch history when component mounts or limit changes
   useEffect(() => {
@@ -140,7 +141,10 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text,
+          model: selectedModel, // Include selected model
+        }),
       })
 
       if (!response.ok) {
@@ -181,6 +185,31 @@ function App() {
         </header>
 
         <form onSubmit={analyzeSentiment} className="analysis-form">
+          {/* Model Selector */}
+          <div className="model-selector">
+            <label htmlFor="model">🤖 Analysis Mode:</label>
+            <div className="model-options">
+              <button
+                type="button"
+                className={`model-option ${selectedModel === 'vader' ? 'active' : ''}`}
+                onClick={() => setSelectedModel('vader')}
+              >
+                <span className="model-icon">⚡</span>
+                <span className="model-name">Fast</span>
+                <span className="model-time">~50ms</span>
+              </button>
+              <button
+                type="button"
+                className={`model-option ${selectedModel === 'distilbert' ? 'active' : ''}`}
+                onClick={() => setSelectedModel('distilbert')}
+              >
+                <span className="model-icon">🎯</span>
+                <span className="model-name">Precise</span>
+                <span className="model-time">~200ms</span>
+              </button>
+            </div>
+          </div>
+
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

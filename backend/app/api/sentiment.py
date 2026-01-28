@@ -3,75 +3,31 @@ Sentiment analysis API endpoints.
 """
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from app.models.schemas import SentimentRequest, SentimentResponse  # Import from schemas
 from app.services.sentiment_analyzer import sentiment_analyzer
-from app.database import get_connection, cleanup_old_records  # ADDED cleanup_old_records
+from app.database import get_connection, cleanup_old_records
 from datetime import datetime
 import logging
-import random  # For periodic cleanup
+import random
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-class SentimentRequest(BaseModel):
-    """Request model for sentiment analysis"""
-    text: str = Field(..., min_length=1, max_length=5000, description="Text to analyze")
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "text": "Tesla stock is going to the moon! 🚀"
-            }
-        }
-
-
-class SentimentResponse(BaseModel):
-    """Response model for sentiment analysis"""
-    text: str
-    sentiment: str
-    emoji: str
-    scores: dict
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    saved_to_db: bool = False
-    moderation: dict = Field(default_factory=dict)
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "text": "Tesla stock is going to the moon! 🚀",
-                "sentiment": "positive",
-                "emoji": "😊",
-                "scores": {
-                    "positive": 0.754,
-                    "negative": 0.0,
-                    "neutral": 0.246,
-                    "compound": 0.875
-                },
-                "timestamp": "2026-01-24T13:20:54.123456",
-                "saved_to_db": True,
-                "moderation": {
-                    "flagged": False,
-                    "reason": None,
-                    "severity": "safe"
-                }
-            }
-        }
-
-
 @router.post("/analyze", response_model=SentimentResponse)
 async def analyze_sentiment(request: SentimentRequest):
     """
-    Analyze sentiment of text using VADER.
+    Analyze sentiment of text using VADER or DistilBERT.
     
-    Returns sentiment classification and scores.
-    Saves the result to PostgreSQL for history tracking (except harmful content).
+    Models:
+    - vader: Fast, rule-based (50ms)
+    - distilbert: Accurate, ML-based (200ms)
     """
-    logger.info(f"📥 Received sentiment analysis request")
+    logger.info(f"📥 Received request (model: {request.model})")
     
-    # Analyze sentiment
-    result = sentiment_analyzer.analyze(request.text)
+    # Analyze with specified model
+    result = sentiment_analyzer.analyze(request.text, model=request.model)
     
     # Add timestamp
     timestamp = datetime.utcnow()

@@ -7,6 +7,56 @@ from datetime import datetime
 from enum import Enum
 
 
+# ============================================
+# SENTIMENT ANALYSIS MODELS (NEW)
+# ============================================
+
+class SentimentRequest(BaseModel):
+    """Request model for sentiment analysis"""
+    text: str = Field(..., min_length=1, max_length=5000)
+    model: str = Field(default="vader", pattern="^(vader|distilbert)$")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "text": "I love this product!",
+                "model": "vader"
+            }
+        }
+
+
+class ModerationInfo(BaseModel):
+    """Content moderation information"""
+    flagged: bool
+    reason: Optional[str] = None
+    severity: str
+
+
+class SentimentScores(BaseModel):
+    """Sentiment scores"""
+    positive: float
+    negative: float
+    neutral: float
+    compound: float
+
+
+class SentimentResponse(BaseModel):
+    """Response model for sentiment analysis"""
+    text: str
+    sentiment: str
+    emoji: str
+    scores: SentimentScores
+    moderation: ModerationInfo
+    timestamp: datetime
+    saved_to_db: bool
+    model: str
+    confidence: Optional[float] = None
+
+
+# ============================================
+# STOCK SENTIMENT MODELS (EXISTING)
+# ============================================
+
 class SentimentLabel(str, Enum):
     """Sentiment labels"""
     POSITIVE = "positive"

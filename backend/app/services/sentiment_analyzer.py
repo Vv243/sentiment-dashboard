@@ -1,46 +1,46 @@
 """
-Sentiment analysis service using VADER with content moderation.
+Sentiment analysis service with multiple models.
+Supports VADER (fast) and DistilBERT (accurate).
 """
-
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from app.services.content_moderator import content_moderator
+from app.services.distilbert_analyzer import distilbert_analyzer
 import logging
 
 logger = logging.getLogger(__name__)
 
 class SentimentAnalyzer:
     """
-    Sentiment analyzer using VADER with content moderation.
-    
-    VADER (Valence Aware Dictionary and sEntiment Reasoner) is specifically
-    attuned to sentiments expressed in social media.
-    
-    Includes content moderation to detect harmful patterns that VADER might miss.
+    Multi-model sentiment analyzer.
+    - VADER: Fast, rule-based (good for simple text)
+    - DistilBERT: Accurate, ML-based (better for complex text)
     """
+    
     def __init__(self):
-        """Initialize the VADER sentiment analyzer"""
-        logger.info("🧠 Initializing VADER sentiment analyzer...")
-        self.analyzer = SentimentIntensityAnalyzer()
-        logger.info("✅ VADER initialized successfully")
-
-    def analyze(self, text: str) -> dict:
+        """Initialize both VADER and DistilBERT"""
+        logger.info("🧠 Initializing sentiment analyzers...")
+        self.vader = SentimentIntensityAnalyzer()
+        # DistilBERT loads lazily (only when needed)
+        logger.info("✅ Sentiment analyzers ready")
+    
+    def analyze(self, text: str, model: str = "vader") -> dict:
         """
-        Analyze sentiment of text with content moderation.
+        Analyze sentiment with specified model.
         
         Args:
-            text: The text to analyze
+            text: Text to analyze
+            model: "vader" (fast) or "distilbert" (accurate)
             
         Returns:
-            dict with sentiment scores, classification, and moderation flags
+            dict with sentiment, scores, and moderation
         """
-        logger.info(f"📊 Analyzing text: {text[:50]}...")
+        logger.info(f"📊 Analyzing with {model}: {text[:50]}...")
         
         # Step 1: Check for harmful content first
-        moderation_result = content_moderator.check_content(text)
+        moderation = content_moderator.check_content(text)
         
-        # Step 2: If harmful, override sentiment analysis
-        if moderation_result['is_harmful']:
-            logger.warning(f"⚠️ Harmful content detected, overriding sentiment")
+        if moderation['is_harmful']:
+            logger.warning("⚠️ Harmful content detected, overriding sentiment")
             return {
                 'text': text,
                 'sentiment': 'harmful',
@@ -53,17 +53,32 @@ class SentimentAnalyzer:
                 },
                 'moderation': {
                     'flagged': True,
-                    'reason': moderation_result['reason'],
-                    'severity': moderation_result['severity']
-                }
+                    'reason': moderation['reason'],
+                    'severity': moderation['severity']
+                },
+                'model': model
             }
-
-        # Step 3: Run VADER analysis for safe content
-        scores = self.analyzer.polarity_scores(text)
-
-        # Determine overall sentiment based on compound score
+        
+        # Step 2: Choose model for sentiment analysis
+        if model == "distilbert":
+            result = self._analyze_with_distilbert(text)
+        else:
+            result = self._analyze_with_vader(text)
+        
+        # Add moderation info
+        result['moderation'] = {
+            'flagged': False,
+            'reason': None,
+            'severity': 'safe'
+        }
+        
+        return result
+    
+    def _analyze_with_vader(self, text: str) -> dict:
+        """Analyze with VADER (fast, rule-based)"""
+        scores = self.vader.polarity_scores(text)
         compound = scores['compound']
-     
+        
         if compound >= 0.05:
             sentiment = 'positive'
             emoji = '😊'
@@ -73,8 +88,8 @@ class SentimentAnalyzer:
         else:
             sentiment = 'neutral'
             emoji = '😐'
-
-        result = {
+        
+        return {
             'text': text,
             'sentiment': sentiment,
             'emoji': emoji,
@@ -84,16 +99,12 @@ class SentimentAnalyzer:
                 'neutral': round(scores['neu'], 3),
                 'compound': round(scores['compound'], 3)
             },
-            'moderation': {
-                'flagged': False,
-                'reason': None,
-                'severity': 'safe'
-            }
+            'model': 'vader'
         }
+    
+    def _analyze_with_distilbert(self, text: str) -> dict:
+        """Analyze with DistilBERT (accurate, ML-based)"""
+        return distilbert_analyzer.analyze(text)
 
-        logger.info(f"✅ Sentiment: {sentiment} {emoji} (compound: {compound:.3f})")
-        
-        return result
-
-# Create global instance
+# Global instance
 sentiment_analyzer = SentimentAnalyzer()
