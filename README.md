@@ -247,6 +247,15 @@ DATABASE_NAME=sentiment_db
 
 ---
 
+## ⚠️ Note on DistilBERT
+
+The Precise mode (DistilBERT) requires ~512MB RAM and may not be available on free hosting tiers. If unavailable, the app automatically falls back to VADER (Fast mode) with a notice.
+
+To enable DistilBERT in production:
+
+- Upgrade to Render Starter plan ($7/month, 1GB RAM)
+- Or run on a server with sufficient memory
+
 ## 🔧 Development Roadmap
 
 ### Phase 1: Core Features (✅ Complete)
