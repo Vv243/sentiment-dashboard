@@ -1,8 +1,11 @@
 """
 DistilBERT sentiment analyzer - more accurate than VADER.
 Uses HuggingFace transformers for context-aware sentiment analysis.
+
+NOTE: Disabled on servers with <1GB RAM to prevent timeouts.
 """
 import logging
+import psutil
 import os
 
 logger = logging.getLogger(__name__)
@@ -11,19 +14,43 @@ class DistilBERTAnalyzer:
     """
     Sentiment analyzer using DistilBERT transformer model.
     
-    NOTE: Requires ~512MB RAM. May not work on free hosting tiers.
-    Falls back to error message if model cannot be loaded.
+    Automatically disabled on low-memory servers (< 1GB RAM).
     """
     
     def __init__(self):
-        """Initialize DistilBERT model (loads on first use)"""
+        """Initialize DistilBERT analyzer"""
         self._model = None
-        self._failed = False
-        logger.info("🤖 DistilBERT analyzer initialized (lazy loading)")
+        self._enabled = self._check_if_enabled()
+        
+        if self._enabled:
+            logger.info("🤖 DistilBERT analyzer initialized (lazy loading)")
+        else:
+            logger.warning("⚠️ DistilBERT disabled (insufficient memory - need 1GB+)")
+    
+    def _check_if_enabled(self):
+        """Check if we have enough memory to run DistilBERT"""
+        try:
+            import psutil
+            total_memory_gb = psutil.virtual_memory().total / (1024 ** 3)
+            
+            # Need at least 1GB to safely run DistilBERT
+            if total_memory_gb < 1.0:
+                logger.warning(f"⚠️ Only {total_memory_gb:.2f}GB RAM available, DistilBERT needs 1GB+")
+                return False
+            
+            logger.info(f"✅ {total_memory_gb:.2f}GB RAM available, DistilBERT enabled")
+            return True
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Could not check memory: {e}, disabling DistilBERT")
+            return False
     
     def _load_model(self):
         """Lazy load the model (only when first needed)"""
-        if self._model is None and not self._failed:
+        if not self._enabled:
+            return None
+            
+        if self._model is None:
             try:
                 logger.info("📦 Loading DistilBERT model...")
                 from transformers import pipeline
@@ -31,66 +58,34 @@ class DistilBERTAnalyzer:
                 self._model = pipeline(
                     "sentiment-analysis",
                     model="distilbert-base-uncased-finetuned-sst-2-english",
-                    device=-1  # Use CPU
+                    device=-1
                 )
                 logger.info("✅ DistilBERT model loaded successfully")
             except Exception as e:
                 logger.error(f"❌ Failed to load DistilBERT: {e}")
-                logger.error("⚠️ This usually means insufficient memory (need ~512MB)")
-                self._failed = True
+                self._enabled = False
                 
         return self._model
     
     def analyze(self, text: str) -> dict:
         """
-        Analyze sentiment using DistilBERT.
-        
-        Args:
-            text: Text to analyze
-            
-        Returns:
-            dict with sentiment, emoji, scores, confidence
+        Analyze sentiment using DistilBERT or fallback to VADER.
         """
-        logger.info(f"🤖 Analyzing with DistilBERT: {text[:50]}...")
+        logger.info(f"🤖 DistilBERT request: {text[:50]}...")
         
-        # Try to load model
+        # If DistilBERT is disabled, use VADER fallback immediately
+        if not self._enabled:
+            logger.info("⚠️ Using VADER fallback (DistilBERT unavailable)")
+            return self._vader_fallback(text)
+        
+        # Try to load and use DistilBERT
         model = self._load_model()
         
-        # If model failed to load, return fallback VADER-style response
         if model is None:
-            logger.warning("⚠️ DistilBERT unavailable, using fallback")
-            from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-            vader = SentimentIntensityAnalyzer()
-            scores = vader.polarity_scores(text)
-            compound = scores['compound']
-            
-            if compound >= 0.05:
-                sentiment = 'positive'
-                emoji = '😊'
-            elif compound <= -0.05:
-                sentiment = 'negative'
-                emoji = '😞'
-            else:
-                sentiment = 'neutral'
-                emoji = '😐'
-            
-            return {
-                'text': text,
-                'sentiment': sentiment,
-                'emoji': emoji,
-                'scores': {
-                    'positive': round(scores['pos'], 3),
-                    'negative': round(scores['neg'], 3),
-                    'neutral': round(scores['neu'], 3),
-                    'compound': round(scores['compound'], 3)
-                },
-                'confidence': None,
-                'model': 'vader-fallback',  # Indicate fallback
-                'note': 'DistilBERT unavailable (insufficient memory)'
-            }
+            logger.warning("⚠️ DistilBERT failed to load, using VADER fallback")
+            return self._vader_fallback(text)
         
         try:
-            # Get prediction from DistilBERT
             result = model(text[:512])[0]
             
             label = result['label']
@@ -130,18 +125,44 @@ class DistilBERTAnalyzer:
                 'model': 'distilbert'
             }
             
-            logger.info(f"✅ DistilBERT: {sentiment} {emoji} (confidence: {confidence:.3f})")
-            
+            logger.info(f"✅ DistilBERT: {sentiment} {emoji}")
             return response
             
         except Exception as e:
             logger.error(f"❌ DistilBERT error: {e}")
-            return {
-                'error': str(e),
-                'sentiment': 'error',
-                'emoji': '⚠️',
-                'model': 'error'
-            }
+            return self._vader_fallback(text)
+    
+    def _vader_fallback(self, text: str) -> dict:
+        """Fallback to VADER when DistilBERT unavailable"""
+        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+        
+        vader = SentimentIntensityAnalyzer()
+        scores = vader.polarity_scores(text)
+        compound = scores['compound']
+        
+        if compound >= 0.05:
+            sentiment = 'positive'
+            emoji = '😊'
+        elif compound <= -0.05:
+            sentiment = 'negative'
+            emoji = '😞'
+        else:
+            sentiment = 'neutral'
+            emoji = '😐'
+        
+        return {
+            'text': text,
+            'sentiment': sentiment,
+            'emoji': emoji,
+            'scores': {
+                'positive': round(scores['pos'], 3),
+                'negative': round(scores['neg'], 3),
+                'neutral': round(scores['neu'], 3),
+                'compound': round(scores['compound'], 3)
+            },
+            'confidence': None,
+            'model': 'vader-fallback'
+        }
 
 # Global instance
 distilbert_analyzer = DistilBERTAnalyzer()
