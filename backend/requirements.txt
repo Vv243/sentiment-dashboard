@@ -19,3 +19,5 @@ transformers>=4.40.0
 torch==2.10.0
 
 psutil==6.1.1
+
+textblob==0.18.0

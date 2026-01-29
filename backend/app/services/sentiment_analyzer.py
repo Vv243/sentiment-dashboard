@@ -1,10 +1,10 @@
 """
 Sentiment analysis service with multiple models.
-Supports VADER (fast) and DistilBERT (accurate).
+Supports VADER (fast) and Hybrid (accurate).
 """
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from app.services.content_moderator import content_moderator
-from app.services.distilbert_analyzer import distilbert_analyzer
+from app.services.distilbert_analyzer import hybrid_analyzer  # CHANGED: import hybrid
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,14 +13,14 @@ class SentimentAnalyzer:
     """
     Multi-model sentiment analyzer.
     - VADER: Fast, rule-based (good for simple text)
-    - DistilBERT: Accurate, ML-based (better for complex text)
+    - Hybrid: VADER + TextBlob + Patterns (better accuracy)
     """
     
     def __init__(self):
-        """Initialize both VADER and DistilBERT"""
+        """Initialize both VADER and Hybrid"""
         logger.info("🧠 Initializing sentiment analyzers...")
         self.vader = SentimentIntensityAnalyzer()
-        # DistilBERT loads lazily (only when needed)
+        # Hybrid loads on import
         logger.info("✅ Sentiment analyzers ready")
     
     def analyze(self, text: str, model: str = "vader") -> dict:
@@ -29,7 +29,7 @@ class SentimentAnalyzer:
         
         Args:
             text: Text to analyze
-            model: "vader" (fast) or "distilbert" (accurate)
+            model: "vader" (fast) or "distilbert" (precise - uses hybrid)
             
         Returns:
             dict with sentiment, scores, and moderation
@@ -60,8 +60,8 @@ class SentimentAnalyzer:
             }
         
         # Step 2: Choose model for sentiment analysis
-        if model == "distilbert":
-            result = self._analyze_with_distilbert(text)
+        if model == "distilbert":  # User selected "Precise" mode
+            result = self._analyze_with_hybrid(text)
         else:
             result = self._analyze_with_vader(text)
         
@@ -102,9 +102,9 @@ class SentimentAnalyzer:
             'model': 'vader'
         }
     
-    def _analyze_with_distilbert(self, text: str) -> dict:
-        """Analyze with DistilBERT (accurate, ML-based)"""
-        return distilbert_analyzer.analyze(text)
+    def _analyze_with_hybrid(self, text: str) -> dict:
+        """Analyze with Hybrid (VADER + TextBlob + Patterns)"""
+        return hybrid_analyzer.analyze(text)
 
 # Global instance
 sentiment_analyzer = SentimentAnalyzer()
