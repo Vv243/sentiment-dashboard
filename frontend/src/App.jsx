@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import BatchUpload from './components/BatchUpload'
 
 // API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -352,6 +353,7 @@ function App() {
             </>
           )}
         </div>
+        <BatchUpload />
       </div>
     </div>
   )

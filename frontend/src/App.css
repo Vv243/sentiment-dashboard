@@ -699,3 +699,331 @@ body {
     min-width: 0;
   }
 }
+
+/* ============================================ */
+/* BATCH CSV ANALYSIS STYLES */
+/* ============================================ */
+
+.batch-upload-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  margin-top: 2rem;
+}
+
+.batch-upload-container h2 {
+  color: #2d3748;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Upload Section */
+.upload-section {
+  margin-bottom: 1.5rem;
+}
+
+.upload-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #4a5568;
+  font-size: 1rem;
+}
+
+.file-input {
+  width: 100%;
+  padding: 1rem;
+  border: 2px dashed #667eea;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #f7fafc;
+  color: #2d3748;
+  font-size: 0.95rem;
+}
+
+.file-input:hover {
+  border-color: #764ba2;
+  background: #edf2f7;
+}
+
+.file-input::-webkit-file-upload-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-right: 1rem;
+}
+
+.file-input::-webkit-file-upload-button:hover {
+  transform: translateY(-1px);
+}
+
+/* Error Message (batch specific) */
+.batch-upload-container .error-message {
+  background: #fee;
+  border: 1px solid #fcc;
+  border-left: 4px solid #c33;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+/* Loading Message */
+.loading-message {
+  background: linear-gradient(135deg, #e8eef5 0%, #f5f7fa 100%);
+  border: 2px solid #667eea;
+  color: #4a5568;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Column Selection */
+.column-selection {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e2e8f0;
+}
+
+.column-selection h3 {
+  color: #2d3748;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+
+.column-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  background: white;
+  color: #2d3748;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.column-select:hover {
+  border-color: #667eea;
+}
+
+.column-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Preview Section */
+.preview-section {
+  margin-top: 1.5rem;
+}
+
+.preview-section h4 {
+  color: #4a5568;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.preview-table {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.preview-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #f7fafc;
+}
+
+.preview-table th,
+.preview-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.preview-table th {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 0.95rem;
+}
+
+.preview-table td {
+  color: #4a5568;
+  font-size: 0.9rem;
+}
+
+.preview-table tr:last-child td {
+  border-bottom: none;
+}
+
+.preview-table tr:hover {
+  background: #edf2f7;
+}
+
+.row-count {
+  color: #718096;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.row-count strong {
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+/* Start Analysis Button */
+.start-analysis-btn {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.3s;
+}
+
+.start-analysis-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.start-analysis-btn:active {
+  transform: translateY(0);
+}
+
+.start-analysis-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================ */
+/* BATCH UPLOAD - DARK MODE */
+/* ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .batch-upload-container {
+    background: #2d3748;
+  }
+
+  .batch-upload-container h2 {
+    color: #e2e8f0;
+  }
+
+  .upload-label {
+    color: #cbd5e0;
+  }
+
+  .file-input {
+    background: #1a202c;
+    color: #e2e8f0;
+    border-color: #667eea;
+  }
+
+  .file-input:hover {
+    background: #2d3748;
+  }
+
+  .batch-upload-container .error-message {
+    background: #742a2a;
+    color: #feb2b2;
+    border-left-color: #fc8181;
+  }
+
+  .loading-message {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+    color: #cbd5e0;
+  }
+
+  .column-selection {
+    border-top-color: #4a5568;
+  }
+
+  .column-selection h3 {
+    color: #e2e8f0;
+  }
+
+  .column-select {
+    background: #1a202c;
+    color: #e2e8f0;
+    border-color: #4a5568;
+  }
+
+  .column-select:hover,
+  .column-select:focus {
+    border-color: #667eea;
+  }
+
+  .preview-section h4 {
+    color: #cbd5e0;
+  }
+
+  .preview-table table {
+    background: #1a202c;
+  }
+
+  .preview-table th {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+    color: #e2e8f0;
+  }
+
+  .preview-table td {
+    color: #cbd5e0;
+    border-bottom-color: #4a5568;
+  }
+
+  .preview-table tr:hover {
+    background: #2d3748;
+  }
+
+  .row-count {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+    color: #a0aec0;
+  }
+
+  .row-count strong {
+    color: #667eea;
+  }
+}
+
+/* Responsive Design for Batch Upload */
+@media (max-width: 768px) {
+  .batch-upload-container {
+    padding: 1.5rem;
+  }
+
+  .batch-upload-container h2 {
+    font-size: 1.5rem;
+  }
+
+  .preview-table {
+    font-size: 0.85rem;
+  }
+
+  .preview-table th,
+  .preview-table td {
+    padding: 0.5rem;
+  }
+}
