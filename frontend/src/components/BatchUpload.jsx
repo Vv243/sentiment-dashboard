@@ -1,8 +1,11 @@
 import Papa from 'papaparse'
 import { useState } from 'react'
 
+// API URL from environment variable
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 function BatchUpload() {
-  // State management
+  // File upload state
   const [file, setFile] = useState(null)
   const [csvData, setCsvData] = useState([])
   const [columns, setColumns] = useState([])
@@ -10,11 +13,17 @@ function BatchUpload() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  // NEW: Processing state
+  const [selectedModel, setSelectedModel] = useState('vader') // Fast by default
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [progress, setProgress] = useState({ current: 0, total: 0 })
+  const [results, setResults] = useState([])
+  const [processingErrors, setProcessingErrors] = useState([])
+
   // Handle file selection
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0]
 
-    // Validate file type
     if (!selectedFile) {
       return
     }
@@ -24,7 +33,6 @@ function BatchUpload() {
       return
     }
 
-    // Validate file size (max 5MB)
     if (selectedFile.size > 5 * 1024 * 1024) {
       setError('File too large. Maximum size is 5MB')
       return
@@ -32,6 +40,9 @@ function BatchUpload() {
 
     setFile(selectedFile)
     setError('')
+    // Reset previous results when new file is uploaded
+    setResults([])
+    setProcessingErrors([])
     parseCSV(selectedFile)
   }
 
@@ -40,26 +51,23 @@ function BatchUpload() {
     setIsLoading(true)
 
     Papa.parse(file, {
-      header: true, // First row is column names
-      skipEmptyLines: true, // Ignore empty rows
+      header: true,
+      skipEmptyLines: true,
       complete: (results) => {
         console.log('Parsed CSV:', results)
 
-        // Validate we have data
         if (results.data.length === 0) {
           setError('CSV file is empty')
           setIsLoading(false)
           return
         }
 
-        // Validate row count (max 1000)
         if (results.data.length > 1000) {
           setError('CSV has too many rows. Maximum is 1000 rows')
           setIsLoading(false)
           return
         }
 
-        // Get column names
         const cols = Object.keys(results.data[0])
 
         if (cols.length === 0) {
@@ -68,10 +76,9 @@ function BatchUpload() {
           return
         }
 
-        // Save parsed data
         setCsvData(results.data)
         setColumns(cols)
-        setSelectedColumn(cols[0]) // Auto-select first column
+        setSelectedColumn(cols[0])
         setIsLoading(false)
       },
       error: (error) => {
@@ -85,6 +92,87 @@ function BatchUpload() {
   // Handle column selection
   const handleColumnChange = (event) => {
     setSelectedColumn(event.target.value)
+  }
+
+  // NEW: Process all rows - THIS WAS MISSING!
+  const startBatchAnalysis = async () => {
+    if (!csvData.length || !selectedColumn) {
+      setError('Please upload a CSV and select a column first')
+      return
+    }
+
+    setIsProcessing(true)
+    setProgress({ current: 0, total: csvData.length })
+    setResults([])
+    setProcessingErrors([])
+
+    const newResults = []
+    const errors = []
+
+    // Process each row one by one
+    for (let i = 0; i < csvData.length; i++) {
+      const row = csvData[i]
+      const textToAnalyze = row[selectedColumn]
+
+      // Skip empty or very short text
+      if (!textToAnalyze || textToAnalyze.trim().length < 3) {
+        errors.push({
+          row: i + 1,
+          text: textToAnalyze || '(empty)',
+          error: 'Text too short or empty',
+        })
+        setProgress({ current: i + 1, total: csvData.length })
+        continue
+      }
+
+      try {
+        // Call your existing sentiment API
+        const response = await fetch(`${API_URL}/api/v1/sentiment/analyze`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: textToAnalyze,
+            model: selectedModel,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        // Store result
+        newResults.push({
+          row: i + 1,
+          text: textToAnalyze,
+          sentiment: data.sentiment,
+          emoji: data.emoji,
+          scores: data.scores,
+          moderation: data.moderation,
+        })
+      } catch (err) {
+        console.error(`Error processing row ${i + 1}:`, err)
+        errors.push({
+          row: i + 1,
+          text: textToAnalyze.substring(0, 50) + '...',
+          error: err.message,
+        })
+      }
+
+      // Update progress
+      setProgress({ current: i + 1, total: csvData.length })
+      setResults([...newResults]) // Update results in real-time
+      setProcessingErrors([...errors])
+
+      // Small delay to avoid overwhelming the API (optional)
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+
+    setIsProcessing(false)
+    console.log('Batch analysis complete!', { results: newResults, errors })
   }
 
   return (
@@ -102,6 +190,7 @@ function BatchUpload() {
           accept=".csv"
           onChange={handleFileChange}
           className="file-input"
+          disabled={isProcessing}
         />
       </div>
 
@@ -115,13 +204,45 @@ function BatchUpload() {
       {csvData.length > 0 && columns.length > 0 && (
         <div className="column-selection">
           <h3>Select Column to Analyze</h3>
-          <select value={selectedColumn} onChange={handleColumnChange} className="column-select">
+          <select
+            value={selectedColumn}
+            onChange={handleColumnChange}
+            className="column-select"
+            disabled={isProcessing}
+          >
             {columns.map((col) => (
               <option key={col} value={col}>
                 {col}
               </option>
             ))}
           </select>
+
+          {/* NEW: Model Selector */}
+          <div className="batch-model-selector">
+            <label>🤖 Analysis Mode:</label>
+            <div className="batch-model-options">
+              <button
+                type="button"
+                className={`batch-model-option ${selectedModel === 'vader' ? 'active' : ''}`}
+                onClick={() => setSelectedModel('vader')}
+                disabled={isProcessing}
+              >
+                <span className="model-icon">⚡</span>
+                <span className="model-name">Fast</span>
+                <span className="model-time">~50ms/row</span>
+              </button>
+              <button
+                type="button"
+                className={`batch-model-option ${selectedModel === 'distilbert' ? 'active' : ''}`}
+                onClick={() => setSelectedModel('distilbert')}
+                disabled={isProcessing}
+              >
+                <span className="model-icon">🎯</span>
+                <span className="model-name">Precise</span>
+                <span className="model-time">~200ms/row</span>
+              </button>
+            </div>
+          </div>
 
           {/* Data Preview */}
           <div className="preview-section">
@@ -152,10 +273,82 @@ function BatchUpload() {
           {/* Start Analysis Button */}
           <button
             className="start-analysis-btn"
-            onClick={() => alert('We will implement this tomorrow on Day 2!')}
+            onClick={startBatchAnalysis}
+            disabled={isProcessing || isLoading}
           >
-            Start Analysis →
+            {isProcessing ? 'Processing...' : 'Start Analysis →'}
           </button>
+
+          {/* NEW: Progress Bar */}
+          {isProcessing && (
+            <div className="progress-container">
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{
+                    width: `${(progress.current / progress.total) * 100}%`,
+                  }}
+                />
+              </div>
+              <p className="progress-text">
+                Processing {progress.current} of {progress.total} rows (
+                {Math.round((progress.current / progress.total) * 100)}%)
+              </p>
+            </div>
+          )}
+
+          {/* NEW: Results Display */}
+          {results.length > 0 && (
+            <div className="results-section">
+              <h3>📈 Analysis Results ({results.length} rows)</h3>
+              <div className="results-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Text</th>
+                      <th>Sentiment</th>
+                      <th>Scores</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.map((result, index) => (
+                      <tr key={index}>
+                        <td>{result.row}</td>
+                        <td className="result-text">{result.text.substring(0, 60)}...</td>
+                        <td>
+                          <span className={`sentiment-badge ${result.sentiment}`}>
+                            {result.emoji} {result.sentiment}
+                          </span>
+                        </td>
+                        <td className="result-scores">
+                          <span>😊 {(result.scores.positive * 100).toFixed(0)}%</span>
+                          <span>😐 {(result.scores.neutral * 100).toFixed(0)}%</span>
+                          <span>😞 {(result.scores.negative * 100).toFixed(0)}%</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* NEW: Errors Display */}
+          {processingErrors.length > 0 && (
+            <div className="errors-section">
+              <h3>⚠️ Errors ({processingErrors.length} rows failed)</h3>
+              <div className="errors-list">
+                {processingErrors.map((err, index) => (
+                  <div key={index} className="error-item">
+                    <strong>Row {err.row}:</strong> {err.error}
+                    <br />
+                    <em>{err.text}</em>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

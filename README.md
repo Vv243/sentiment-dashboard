@@ -12,44 +12,54 @@ A full-stack web application for real-time sentiment analysis using AI. Features
 
 ### Core Functionality
 
-- **🎯 Dual-Model Sentiment Analysis**
-  - **Fast Mode**: VADER for quick analysis (~50ms)
-  - **Precise Mode**: Hybrid analyzer combining VADER + TextBlob + custom pattern recognition (~70ms)
-  - 10-15% accuracy improvement over baseline VADER
-- **🧠 Advanced Text Understanding**
-  - Negation handling ("not bad" → positive ✅)
-  - Modern slang recognition ("slaps", "bussin", "hits different")
-  - Irony/sarcasm detection ("thanks for nothing" → negative ✅)
-  - Context-aware sentiment scoring
-  - Confidence metrics based on model agreement
+**🎯 Dual-Model Sentiment Analysis**
+- **Fast Mode**: VADER for quick analysis (~50ms)
+- **Precise Mode**: Hybrid analyzer combining VADER + TextBlob + custom pattern recognition (~70ms)
+- 10-15% accuracy improvement over baseline VADER
 
-- **🛡️ Content Moderation**
-  - 41+ harmful content patterns
-  - Real-time content flagging
-  - Automatic harmful content filtering
-  - Smart censoring for display
-  - Severity classification
+**📊 Batch CSV Analysis** ✨ NEW!
+- Upload CSV files with up to 1000 rows
+- Real-time progress tracking with animated progress bar
+- Batch sentiment analysis with Fast/Precise mode selection
+- Results table with sentiment badges and score breakdowns
+- Error handling for invalid or empty rows
+- Client-side processing optimized for free-tier hosting
 
-- **📊 Historical Tracking**
-  - PostgreSQL database integration
-  - View analysis history with pagination
-  - Load more/less functionality
-  - Automatic cleanup of old records (keeps last 10,000)
-  - Timestamp tracking for all analyses
+**🧠 Advanced Text Understanding**
+- Negation handling ("not bad" → positive ✅)
+- Modern slang recognition ("slaps", "bussin", "hits different")
+- Irony/sarcasm detection ("thanks for nothing" → negative ✅)
+- Context-aware sentiment scoring
+- Confidence metrics based on model agreement
 
-- **🎨 Modern UI/UX**
-  - Beautiful gradient design with dark mode support
-  - Responsive layout (mobile, tablet, desktop)
-  - Real-time emoji indicators
-  - Interactive model selector
-  - Smooth animations and transitions
+**🛡️ Content Moderation**
+- 41+ harmful content patterns
+- Real-time content flagging
+- Automatic harmful content filtering
+- Smart censoring for display
+- Severity classification
 
-- **⚡ Production-Ready**
-  - Optimized for 512MB RAM environments
-  - No external API dependencies
-  - Fast response times
-  - CORS enabled for frontend integration
-  - Automatic deployment via GitHub
+**📊 Historical Tracking**
+- PostgreSQL database integration
+- View analysis history with pagination
+- Load more/less functionality
+- Automatic cleanup of old records (keeps last 10,000)
+- Timestamp tracking for all analyses
+
+**🎨 Modern UI/UX**
+- Beautiful gradient design with dark mode support
+- Responsive layout (mobile, tablet, desktop)
+- Real-time emoji indicators
+- Interactive model selector
+- Smooth animations and transitions
+- Batch upload with file validation
+
+**⚡ Production-Ready**
+- Optimized for 512MB RAM environments
+- No external API dependencies
+- Fast response times
+- CORS enabled for frontend integration
+- Automatic deployment via GitHub
 
 ---
 
@@ -61,53 +71,56 @@ The Precise mode uses a sophisticated multi-model approach:
 
 ```
 User Input → Content Moderation → Model Selection
-                                         ↓
-                            ┌────────────┴────────────┐
-                            ↓                         ↓
+                                         |
+                            +------------+------------+
+                            |                         |
                       Fast Mode                 Precise Mode
                       (VADER only)              (Hybrid)
-                            ↓                         ↓
-                            └────────────┬────────────┘
-                                         ↓
+                            |                         |
+                            +------------+------------+
+                                         |
                                    JSON Response
 ```
 
 ### Hybrid Model Components
 
-1. **VADER Analysis** (60% weight)
-   - Fast rule-based sentiment scoring
-   - Emoticon and punctuation awareness
-   - Intensity modifiers (e.g., "very", "extremely")
-2. **TextBlob Analysis** (40% weight)
-   - Pattern-based sentiment detection
-   - Better negation handling than VADER
-   - Subjectivity scoring
-3. **Custom Pattern Boosting**
-   - Negation patterns: "not bad", "don't hate", "not terrible"
-   - Modern slang: "slaps", "bussin", "fire", "hits different", "no cap"
-   - Irony detection: "thanks for nothing", "oh great" + problem words
-   - Lukewarm expressions: "it's fine", "okay I guess"
-4. **Smart Score Combination**
-   - Weighted averaging of VADER and TextBlob
-   - Pattern boost application
-   - Confidence calculation based on model agreement
-   - Normalized scores (always sum to 1.0)
+**1. VADER Analysis (60% weight)**
+- Fast rule-based sentiment scoring
+- Emoticon and punctuation awareness
+- Intensity modifiers (e.g., "very", "extremely")
+
+**2. TextBlob Analysis (40% weight)**
+- Pattern-based sentiment detection
+- Better negation handling than VADER
+- Subjectivity scoring
+
+**3. Custom Pattern Boosting**
+- Negation patterns: "not bad", "don't hate", "not terrible"
+- Modern slang: "slaps", "bussin", "fire", "hits different", "no cap"
+- Irony detection: "thanks for nothing", "oh great" + problem words
+- Lukewarm expressions: "it's fine", "okay I guess"
+
+**4. Smart Score Combination**
+- Weighted averaging of VADER and TextBlob
+- Pattern boost application
+- Confidence calculation based on model agreement
+- Normalized scores (always sum to 1.0)
 
 ### Example Improvements
 
 | Text                     | Fast Mode (VADER)   | Precise Mode (Hybrid) | Winner    |
-| ------------------------ | ------------------- | --------------------- | --------- |
-| "This is not bad at all" | 😞 Negative (-0.34) | 😊 Positive (+0.42)   | ✅ Hybrid |
-| "This movie slaps!"      | 😞 Negative (-0.34) | 😊 Positive (+0.63)   | ✅ Hybrid |
-| "Thanks for nothing"     | 😊 Positive (+0.33) | 😞 Negative (-0.52)   | ✅ Hybrid |
-| "It's fine I guess"      | 😊 Positive (+0.22) | 😐 Neutral (-0.05)    | ✅ Hybrid |
-| "I don't hate it"        | 😞 Negative (-0.58) | 😊 Positive (+0.18)   | ✅ Hybrid |
-| "I love this!"           | 😊 Positive (+0.80) | 😊 Positive (+0.85)   | Both work |
+|--------------------------|---------------------|----------------------|-----------|
+| "This is not bad at all" | 😞 Negative (-0.34) | 😊 Positive (+0.42)  | ✅ Hybrid |
+| "This movie slaps!"      | 😞 Negative (-0.34) | 😊 Positive (+0.63)  | ✅ Hybrid |
+| "Thanks for nothing"     | 😊 Positive (+0.33) | 😞 Negative (-0.52)  | ✅ Hybrid |
+| "It's fine I guess"      | 😊 Positive (+0.22) | 😐 Neutral (-0.05)   | ✅ Hybrid |
+| "I don't hate it"        | 😞 Negative (-0.58) | 😊 Positive (+0.18)  | ✅ Hybrid |
+| "I love this!"           | 😊 Positive (+0.80) | 😊 Positive (+0.85)  | Both work |
 
 ### Performance Metrics
 
 | Metric            | Fast Mode | Precise Mode |
-| ----------------- | --------- | ------------ |
+|-------------------|-----------|--------------|
 | Response Time     | ~50ms     | ~70ms        |
 | Memory Usage      | 5MB       | 8MB          |
 | Overall Accuracy  | ~75%      | ~85-87%      |
@@ -126,6 +139,7 @@ User Input → Content Moderation → Model Selection
 
 - **React 18** - Modern UI library with hooks
 - **Vite** - Fast build tool and dev server
+- **Papaparse** - CSV parsing library for batch uploads
 - **CSS3** - Custom styling with gradients and animations
 - **Dark Mode Support** - System preference detection
 - **Deployed on Vercel** - Edge CDN delivery with automatic deployments
@@ -182,18 +196,18 @@ python -m venv venv
 
 # Activate virtual environment
 # Windows:
-venv\Scripts\activate
+.\venv\Scripts\activate
 # Mac/Linux:
 source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Create .env file (optional - database)
+# Create .env file (optional - for database)
 echo "DATABASE_URL=your_postgresql_url" > .env
 
 # Start server
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
 
 Backend runs on **http://localhost:8000**
@@ -213,7 +227,7 @@ echo "VITE_API_URL=http://localhost:8000" > .env
 npm run dev
 ```
 
-Frontend runs on **http://localhost:5173**
+Frontend runs on **http://localhost:3000**
 
 ---
 
@@ -226,7 +240,7 @@ Interactive API documentation available at:
 
 ### Main Endpoints
 
-#### `POST /api/v1/sentiment/analyze`
+#### POST /api/v1/sentiment/analyze
 
 Analyze sentiment of input text with model selection
 
@@ -274,7 +288,7 @@ Analyze sentiment of input text with model selection
 }
 ```
 
-#### `GET /api/v1/sentiment/history?limit=10`
+#### GET /api/v1/sentiment/history?limit=10
 
 Retrieve recent sentiment analyses
 
@@ -294,11 +308,19 @@ Retrieve recent sentiment analyses
       "text": "This is not bad!",
       "sentiment": "positive",
       "emoji": "😊",
-      "scores": {...},
+      "scores": {
+        "positive": 0.65,
+        "negative": 0.15,
+        "neutral": 0.2,
+        "compound": 0.5
+      },
       "timestamp": "2026-01-28T20:30:00",
-      "moderation": {...}
-    },
-    ...
+      "moderation": {
+        "flagged": false,
+        "reason": null,
+        "severity": "safe"
+      }
+    }
   ]
 }
 ```
@@ -312,23 +334,31 @@ sentiment-dashboard/
 ├── backend/                      # FastAPI backend
 │   ├── app/
 │   │   ├── api/                  # API endpoints
-│   │   │   └── sentiment.py      # Sentiment analysis routes
+│   │   │   ├── sentiment.py      # Sentiment analysis routes
+│   │   │   ├── collection.py     # Collection endpoints
+│   │   │   └── health.py         # Health check
 │   │   ├── models/               # Data models
 │   │   │   └── schemas.py        # Pydantic schemas
 │   │   ├── services/             # Business logic
 │   │   │   ├── sentiment_analyzer.py    # Main analyzer
-│   │   │   ├── distilbert_analyzer.py   # Hybrid model (VADER+TextBlob)
+│   │   │   ├── distilbert_analyzer.py   # Hybrid model
 │   │   │   └── content_moderator.py     # Content filtering
-│   │   ├── database.py           # PostgreSQL connection
-│   │   └── main.py               # FastAPI app
+│   │   ├── utils/                # Utilities
+│   │   │   ├── database.py       # PostgreSQL connection
+│   │   │   └── main.py           # FastAPI app entry
+│   │   └── core/                 # Core config
 │   ├── requirements.txt          # Python dependencies
 │   ├── start.sh                  # Render startup script
 │   └── .env                      # Environment variables
 │
 ├── frontend/                     # React frontend
 │   ├── src/
-│   │   ├── App.jsx               # Main component with model selector
-│   │   ├── App.css               # Styling with dark mode
+│   │   ├── components/           # React components
+│   │   │   └── BatchUpload.jsx   # CSV batch upload
+│   │   ├── services/             # API services
+│   │   │   └── api.js            # API client
+│   │   ├── App.jsx               # Main component
+│   │   ├── App.css               # Styling
 │   │   └── main.jsx              # Entry point
 │   ├── package.json
 │   └── .env                      # API URL configuration
@@ -343,10 +373,9 @@ sentiment-dashboard/
 
 ### Test the Live App
 
-1. Visit: https://sentiment-dashboard-zeta.vercel.app/
-2. Try these test cases:
+Visit: https://sentiment-dashboard-zeta.vercel.app/
 
-**Negation Test:**
+#### Negation Test
 
 ```
 Input: "This is not bad at all"
@@ -354,7 +383,7 @@ Fast Mode: 😞 Negative
 Precise Mode: 😊 Positive ✅
 ```
 
-**Slang Test:**
+#### Slang Test
 
 ```
 Input: "This movie slaps!"
@@ -362,12 +391,21 @@ Fast Mode: 😞 Negative
 Precise Mode: 😊 Positive ✅
 ```
 
-**Irony Test:**
+#### Irony Test
 
 ```
 Input: "Thanks for nothing"
 Fast Mode: 😊 Positive
 Precise Mode: 😞 Negative ✅
+```
+
+#### Batch CSV Test
+
+```
+1. Scroll to "Batch CSV Analysis" section
+2. Upload a CSV file with a "text" column
+3. Select column and choose Fast/Precise mode
+4. Watch real-time progress and results!
 ```
 
 ### Test the API
@@ -418,6 +456,13 @@ curl -X POST "https://sentiment-dashboard-api.onrender.com/api/v1/sentiment/anal
 - Real-time moderation with severity classification
 - Automatic censoring for user safety
 
+### 6. Batch Processing Architecture
+
+- Client-side CSV parsing for efficient resource usage
+- Real-time progress tracking with animated UI
+- Graceful error handling for invalid data
+- Works within free-tier hosting constraints
+
 ---
 
 ## 📚 Learning Outcomes
@@ -438,6 +483,8 @@ This project demonstrates:
 - ✅ **Environment variable management**
 - ✅ **CORS configuration**
 - ✅ **Git version control** with feature branches
+- ✅ **CSV processing** (batch file uploads)
+- ✅ **Client-side data processing** (Papaparse)
 
 ---
 
@@ -445,37 +492,45 @@ This project demonstrates:
 
 Use this script to showcase the project:
 
-1. **Show Fast Mode**
-   - Input: "I love this!"
-   - Shows instant response (~50ms)
-   - Positive result ✅
+**1. Show Fast Mode**
+- Input: "I love this!"
+- Shows instant response (~50ms)
+- Positive result ✅
 
-2. **Show Precise Mode Advantage**
-   - Input: "This is not bad at all"
-   - Fast Mode: 😞 Negative ❌
-   - Precise Mode: 😊 Positive ✅
-   - Explain: Hybrid model understands negation
+**2. Show Precise Mode Advantage**
+- Input: "This is not bad at all"
+- Fast Mode: 😞 Negative ❌
+- Precise Mode: 😊 Positive ✅
+- Explain: Hybrid model understands negation
 
-3. **Show Pattern Detection**
-   - Input: "This movie slaps!"
-   - Show `details` in response
-   - Explain: Custom pattern boost for slang
+**3. Show Pattern Detection**
+- Input: "This movie slaps!"
+- Show `details` in response
+- Explain: Custom pattern boost for slang
 
-4. **Show Content Moderation**
-   - Try harmful content
-   - Show warning banner + censored text
-   - Explain: 41+ patterns for safety
+**4. Show Content Moderation**
+- Try harmful content
+- Show warning banner + censored text
+- Explain: 41+ patterns for safety
 
-5. **Show History Tracking**
-   - Scroll to history section
-   - Show multiple analyses
-   - Demonstrate pagination (View More/Less)
+**5. Show History Tracking**
+- Scroll to history section
+- Show multiple analyses
+- Demonstrate pagination (View More/Less)
+
+**6. Show Batch CSV Analysis** ✨ NEW!
+- Scroll to Batch CSV Analysis section
+- Upload sample CSV with product reviews
+- Select "text" column and Fast mode
+- Watch animated progress bar fill up
+- View results table with sentiment badges
+- Explain: Client-side processing within free-tier constraints
 
 ---
 
 ## 🔧 Development Roadmap
 
-### Phase 1: Core Features (✅ Complete)
+### Phase 1: Core Features ✅ COMPLETE
 
 - [x] FastAPI backend setup
 - [x] VADER sentiment analysis
@@ -488,18 +543,17 @@ Use this script to showcase the project:
 - [x] Content moderation
 - [x] Historical tracking with pagination
 
-### Phase 2: Enhancements (📋 Planned)
+### Phase 2: Enhancements 🚀 IN PROGRESS
 
+- [x] **Batch analysis (upload CSV file)** ✅ COMPLETED!
+- [ ] Export batch results to CSV
 - [ ] Sentiment trend charts (Recharts integration)
-- [ ] Export history to CSV
-- [ ] Batch analysis (upload CSV file)
 - [ ] User feedback system (thumbs up/down)
 - [ ] API key authentication
 - [ ] Rate limiting (SlowAPI)
 - [ ] Multi-language support
-- [ ] Bulk text analysis
 
-### Phase 3: Advanced Features (💡 Ideas)
+### Phase 3: Advanced Features 💡 PLANNED
 
 - [ ] User accounts and authentication
 - [ ] Custom model training
@@ -540,6 +594,7 @@ MIT License - feel free to use this project for learning!
 - **TextBlob** - Steven Loria
 - **FastAPI** - Sebastián Ramírez
 - **React** - Meta/Facebook
+- **Papaparse** - Matt Holt
 - **Vercel & Render** - Deployment platforms
 
 ---
