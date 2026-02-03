@@ -175,6 +175,61 @@ function BatchUpload() {
     console.log('Batch analysis complete!', { results: newResults, errors })
   }
 
+  // NEW: Export results to CSV
+  const downloadResultsCSV = () => {
+    if (results.length === 0) {
+      alert('No results to export')
+      return
+    }
+
+    // Create CSV header
+    const headers = [
+      'Row',
+      'Text',
+      'Sentiment',
+      'Emoji',
+      'Positive %',
+      'Neutral %',
+      'Negative %',
+      'Compound Score',
+      'Flagged',
+    ]
+
+    // Create CSV rows
+    const csvRows = results.map((result) => [
+      result.row,
+      `"${result.text.replace(/"/g, '""')}"`, // Escape quotes in text
+      result.sentiment,
+      result.emoji,
+      `${(result.scores.positive * 100).toFixed(1)}%`,
+      `${(result.scores.neutral * 100).toFixed(1)}%`,
+      `${(result.scores.negative * 100).toFixed(1)}%`,
+      result.scores.compound.toFixed(3),
+      result.moderation?.flagged ? 'Yes' : 'No',
+    ])
+
+    // Combine header and rows
+    const csvContent = [headers.join(','), ...csvRows.map((row) => row.join(','))].join('\n')
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+
+    link.setAttribute('href', url)
+    link.setAttribute(
+      'download',
+      `sentiment_analysis_results_${new Date().toISOString().slice(0, 10)}.csv`
+    )
+    link.style.visibility = 'hidden'
+
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    console.log('CSV exported successfully!')
+  }
+
   return (
     <div className="batch-upload-container">
       <h2>📊 Batch CSV Analysis</h2>
@@ -298,9 +353,49 @@ function BatchUpload() {
           )}
 
           {/* NEW: Results Display */}
+          {/* NEW: Results Display */}
           {results.length > 0 && (
             <div className="results-section">
-              <h3>📈 Analysis Results ({results.length} rows)</h3>
+              <div className="results-header">
+                <h3>📈 Analysis Results ({results.length} rows)</h3>
+                <button
+                  className="download-csv-btn"
+                  onClick={downloadResultsCSV}
+                  disabled={isProcessing}
+                >
+                  📥 Download as CSV
+                </button>
+              </div>
+
+              {/* NEW: Summary Statistics */}
+              <div className="summary-stats">
+                <div className="stat-item positive">
+                  <span className="stat-emoji">😊</span>
+                  <span className="stat-label">Positive</span>
+                  <span className="stat-value">
+                    {results.filter((r) => r.sentiment === 'positive').length}
+                  </span>
+                </div>
+                <div className="stat-item neutral">
+                  <span className="stat-emoji">😐</span>
+                  <span className="stat-label">Neutral</span>
+                  <span className="stat-value">
+                    {results.filter((r) => r.sentiment === 'neutral').length}
+                  </span>
+                </div>
+                <div className="stat-item negative">
+                  <span className="stat-emoji">😞</span>
+                  <span className="stat-label">Negative</span>
+                  <span className="stat-value">
+                    {results.filter((r) => r.sentiment === 'negative').length}
+                  </span>
+                </div>
+                <div className="stat-item total">
+                  <span className="stat-emoji">📊</span>
+                  <span className="stat-label">Total</span>
+                  <span className="stat-value">{results.length}</span>
+                </div>
+              </div>
               <div className="results-table">
                 <table>
                   <thead>
