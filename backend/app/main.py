@@ -2,6 +2,31 @@
 Main FastAPI application file.
 """
 
+"""
+Main FastAPI application file.
+"""
+
+# LOAD ENVIRONMENT VARIABLES FIRST - BEFORE ANY OTHER IMPORTS
+from dotenv import load_dotenv
+import os
+
+# Load .env.local ONLY - with override to force it
+load_dotenv('.env.local', override=True)
+
+# DEBUG: Print which database we're using
+db_url = os.getenv('DATABASE_URL', 'NOT SET')
+print("\n" + "="*60)
+print("🔍 DATABASE CONNECTION DEBUG")
+print("="*60)
+print(f"DATABASE_URL: {db_url}")
+if 'localhost' in db_url:
+    print("✅ Using LOCAL database (sentiment_test)")
+elif 'render' in db_url or 'railway' in db_url or 'supabase' in db_url:
+    print("❌ WARNING: Using PRODUCTION database!")
+else:
+    print("⚠️ Unknown database location")
+print("="*60 + "\n")
+
 from app.api import sentiment
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +34,7 @@ from app.core.config import settings
 import logging
 
 # Import database functions - UPDATED FOR POSTGRESQL
-from app.database import connect_to_postgres, close_postgres_connection  # FIXED THIS LINE!
+from app.database import connect_to_postgres, close_postgres_connection
 
 
 # Set up logging

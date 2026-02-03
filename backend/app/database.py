@@ -4,10 +4,10 @@ PostgreSQL database connection using pg8000 (pure Python).
 import pg8000.native
 import logging
 import os
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+#load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,17 @@ def connect_to_postgres():
     try:
         # Get PostgreSQL URL from environment
         database_url = os.getenv("DATABASE_URL")
+        
+        if not database_url:
+            logger.warning("⚠️ DATABASE_URL not found - running without database")
+            return
+        
+         # DEBUG: Print database URL details
+        print("\n" + "="*60)
+        print("🔍 DATABASE.PY DEBUG")
+        print("="*60)
+        print(f"DATABASE_URL from os.getenv: {database_url}")
+        print("="*60 + "\n")
         
         if not database_url:
             logger.warning("⚠️ DATABASE_URL not found - running without database")
