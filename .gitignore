@@ -39,3 +39,5 @@ build/
 
 #Screenshots
 screenshots/
+backend/.env.production
+backend/.env
