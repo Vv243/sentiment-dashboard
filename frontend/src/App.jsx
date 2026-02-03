@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import Analytics from './components/Analytics'
 import BatchUpload from './components/BatchUpload'
 
 // API URL from environment variable
@@ -353,7 +354,11 @@ function App() {
             </>
           )}
         </div>
+        {/* Batch CSV Upload */}
         <BatchUpload />
+
+        {/* Analytics Dashboard */}
+        <Analytics />
       </div>
     </div>
   )
