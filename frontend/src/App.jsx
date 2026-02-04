@@ -121,6 +121,81 @@ function App() {
     }
   }
 
+  // NEW: Export all history to CSV
+  const exportHistoryToCSV = async () => {
+    try {
+      setLoadingHistory(true)
+
+      // Fetch ALL history (no limit)
+      const response = await fetch(`${API_URL}/api/v1/sentiment/history?limit=10000`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch history')
+      }
+
+      const data = await response.json()
+      const allHistory = data.analyses || []
+
+      if (allHistory.length === 0) {
+        alert('No history to export')
+        return
+      }
+
+      // Create CSV header
+      const headers = [
+        'Timestamp',
+        'Text',
+        'Sentiment',
+        'Emoji',
+        'Positive %',
+        'Neutral %',
+        'Negative %',
+        'Compound Score',
+        'Flagged',
+        'Moderation Reason',
+      ]
+
+      // Create CSV rows
+      const csvRows = allHistory.map((item) => [
+        new Date(item.timestamp).toISOString(),
+        `"${(item.text || '').replace(/"/g, '""')}"`, // Escape quotes
+        item.sentiment,
+        item.emoji,
+        `${(item.scores?.positive * 100 || 0).toFixed(1)}%`,
+        `${(item.scores?.neutral * 100 || 0).toFixed(1)}%`,
+        `${(item.scores?.negative * 100 || 0).toFixed(1)}%`,
+        (item.scores?.compound || 0).toFixed(3),
+        item.moderation?.flagged ? 'Yes' : 'No',
+        item.moderation?.flagged ? `"${(item.moderation.reason || '').replace(/"/g, '""')}"` : '',
+      ])
+
+      // Combine header and rows
+      const csvContent = [headers.join(','), ...csvRows.map((row) => row.join(','))].join('\n')
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+
+      link.setAttribute('href', url)
+      link.setAttribute(
+        'download',
+        `sentiment_history_${new Date().toISOString().slice(0, 10)}.csv`
+      )
+      link.style.visibility = 'hidden'
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      console.log(`Exported ${allHistory.length} analyses to CSV`)
+    } catch (error) {
+      console.error('Error exporting history:', error)
+      alert('Failed to export history. Please try again.')
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
   const loadMore = () => {
     setHistoryLimit((prev) => prev + 5) // Load 5 more
   }
@@ -284,16 +359,25 @@ function App() {
         <div className="history-section">
           <div className="history-header">
             <h2>📊 Recent Analyses</h2>
-            <button
-              onClick={() => {
-                setHistoryLimit(5)
-                fetchHistory()
-              }}
-              className="refresh-button"
-              disabled={loadingHistory}
-            >
-              {loadingHistory ? '⏳' : '🔄'} Refresh
-            </button>
+            <div className="history-actions">
+              <button
+                onClick={() => {
+                  setHistoryLimit(5)
+                  fetchHistory()
+                }}
+                className="refresh-button"
+                disabled={loadingHistory}
+              >
+                {loadingHistory ? '⏳' : '🔄'} Refresh
+              </button>
+              <button
+                onClick={exportHistoryToCSV}
+                className="export-history-button"
+                disabled={loadingHistory || history.length === 0}
+              >
+                📥 Export to CSV
+              </button>
+            </div>
           </div>
 
           {loadingHistory && history.length === 0 ? (
