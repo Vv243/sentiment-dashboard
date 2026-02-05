@@ -196,6 +196,34 @@ function App() {
     }
   }
 
+  // NEW: Submit user feedback
+  const submitFeedback = async (analysisId, feedback) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/v1/sentiment/feedback/${analysisId}?feedback=${feedback}`,
+        {
+          method: 'POST',
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to submit feedback')
+      }
+
+      // Update local history to reflect the feedback
+      setHistory((prevHistory) =>
+        prevHistory.map((item) =>
+          item.id === analysisId ? { ...item, user_feedback: feedback } : item
+        )
+      )
+
+      console.log(`✅ Feedback submitted: ${feedback} for analysis ${analysisId}`)
+    } catch (error) {
+      console.error('Error submitting feedback:', error)
+      alert('Failed to submit feedback. Please try again.')
+    }
+  }
+
   const loadMore = () => {
     setHistoryLimit((prev) => prev + 5) // Load 5 more
   }
@@ -387,26 +415,67 @@ function App() {
           ) : (
             <>
               <div className="history-list">
-                {history.map((item, index) => (
-                  <div key={item._id || item.id || index} className="history-item">
-                    <div className="history-header-row">
-                      <span className="history-emoji">{item.emoji}</span>
-                      <span className={`history-sentiment ${item.sentiment}`}>
-                        {item.sentiment}
-                      </span>
-                      <span className="history-date">{formatDate(item.timestamp)}</span>
+                {history.map((item, index) => {
+                  return (
+                    <div key={item._id || item.id || index} className="history-item">
+                      <div className="history-header-row">
+                        <span className="history-emoji">{item.emoji}</span>
+                        <span className={`history-sentiment ${item.sentiment}`}>
+                          {item.sentiment}
+                        </span>
+                        <span className="history-date">{formatDate(item.timestamp)}</span>
+                      </div>
+                      <p className="history-text">
+                        "{censorText(item.text, item.moderation?.flagged)}"
+                      </p>
+                      <div className="history-scores">
+                        <span>😊 {(item.scores.positive * 100).toFixed(0)}%</span>
+                        <span>😐 {(item.scores.neutral * 100).toFixed(0)}%</span>
+                        <span>😞 {(item.scores.negative * 100).toFixed(0)}%</span>
+                        <span>📊 {item.scores.compound.toFixed(2)}</span>
+                        <span className={`model-badge ${item.model || 'vader'}`}>
+                          {item.model === 'distilbert' ? '🎯 Precise' : '⚡ Fast'}
+                        </span>
+                      </div>
+
+                      {/* Feedback Buttons */}
+                      <div className="feedback-container">
+                        <span className="feedback-label">Was this accurate?</span>
+                        <div className="feedback-buttons">
+                          <button
+                            className={`feedback-btn thumbs-up ${
+                              item.user_feedback === 'positive' ? 'active' : ''
+                            }`}
+                            onClick={() => {
+                              console.log('Thumbs up clicked for ID:', item.id)
+                              submitFeedback(item.id, 'positive')
+                            }}
+                            disabled={item.user_feedback !== null}
+                            title="Accurate analysis"
+                          >
+                            👍
+                          </button>
+                          <button
+                            className={`feedback-btn thumbs-down ${
+                              item.user_feedback === 'negative' ? 'active' : ''
+                            }`}
+                            onClick={() => {
+                              console.log('Thumbs down clicked for ID:', item.id)
+                              submitFeedback(item.id, 'negative')
+                            }}
+                            disabled={item.user_feedback !== null}
+                            title="Inaccurate analysis"
+                          >
+                            👎
+                          </button>
+                        </div>
+                        {item.user_feedback && (
+                          <span className="feedback-message">Thanks for your feedback!</span>
+                        )}
+                      </div>
                     </div>
-                    <p className="history-text">
-                      "{censorText(item.text, item.moderation?.flagged)}"
-                    </p>
-                    <div className="history-scores">
-                      <span>😊 {(item.scores.positive * 100).toFixed(0)}%</span>
-                      <span>😐 {(item.scores.neutral * 100).toFixed(0)}%</span>
-                      <span>😞 {(item.scores.negative * 100).toFixed(0)}%</span>
-                      <span>📊 {item.scores.compound.toFixed(2)}</span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
 
               {/* NEW: View More / View Less Buttons */}

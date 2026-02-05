@@ -42,9 +42,9 @@ async def analyze_sentiment(request: SentimentRequest):
             conn.run('''
                 INSERT INTO sentiment_analyses 
                 (text, sentiment, emoji, positive, negative, neutral, compound, 
-                 timestamp, flagged, moderation_reason, moderation_severity)
+                 timestamp, flagged, moderation_reason, moderation_severity, model)
                 VALUES (:text, :sentiment, :emoji, :positive, :negative, :neutral, :compound, 
-                        :timestamp, :flagged, :reason, :severity)
+                        :timestamp, :flagged, :reason, :severity, :model)
             ''',
                 text=request.text,
                 sentiment=result['sentiment'],
@@ -56,7 +56,8 @@ async def analyze_sentiment(request: SentimentRequest):
                 timestamp=timestamp,
                 flagged=result['moderation']['flagged'],
                 reason=result['moderation']['reason'],
-                severity=result['moderation']['severity']
+                severity=result['moderation']['severity'],
+                model=request.model
             )
             saved_to_db = True
             logger.info(f"💾 Saved sentiment analysis to PostgreSQL")
@@ -106,13 +107,15 @@ async def get_sentiment_history(limit: int = 10):
         rows = conn.run('''
             SELECT id, text, sentiment, emoji, 
                    positive, negative, neutral, compound,
-                   timestamp, flagged, moderation_reason, moderation_severity
+                   timestamp, flagged, moderation_reason, moderation_severity,
+                   user_feedback, model
             FROM sentiment_analyses
             ORDER BY timestamp DESC
             LIMIT :limit
         ''', limit=limit)
         
         # Convert to list of dicts
+       # Convert to list of dicts
         analyses = []
         for row in rows:
             analyses.append({
@@ -131,7 +134,9 @@ async def get_sentiment_history(limit: int = 10):
                     "flagged": row[9],
                     "reason": row[10],
                     "severity": row[11]
-                }
+                },
+                "user_feedback": row[12],
+                "model": row[13]  # NEW: Return which model was used
             })
         
         logger.info(f"📤 Returning {len(analyses)} analyses")
@@ -148,3 +153,43 @@ async def get_sentiment_history(limit: int = 10):
             "limit": limit,
             "analyses": []
         }
+    
+@router.post("/feedback/{analysis_id}")
+async def submit_feedback(analysis_id: int, feedback: str = "positive"):
+    """
+    Submit user feedback (thumbs up/down) for an analysis.
+    
+    Args:
+        analysis_id: ID of the sentiment analysis
+        feedback: "positive" or "negative"
+    """
+    from app.database import get_connection
+    
+    connection = get_connection()
+    if connection is None:
+        raise HTTPException(status_code=503, detail="Database not available")
+    
+    # Validate feedback
+    if feedback not in ["positive", "negative"]:
+        raise HTTPException(status_code=400, detail="Feedback must be 'positive' or 'negative'")
+    
+    try:
+        # Update the analysis with feedback
+        connection.run(
+            "UPDATE sentiment_analyses SET user_feedback = :feedback WHERE id = :id",
+            feedback=feedback,
+            id=analysis_id
+        )
+        
+        logger.info(f"✅ Feedback recorded: {feedback} for analysis {analysis_id}")
+        
+        return {
+            "success": True,
+            "analysis_id": analysis_id,
+            "feedback": feedback,
+            "message": "Feedback recorded successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error recording feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to record feedback")

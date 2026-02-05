@@ -81,20 +81,21 @@ def create_tables():
                 timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
                 flagged BOOLEAN DEFAULT FALSE,
                 moderation_reason TEXT,
-                moderation_severity VARCHAR(20)
+                moderation_severity VARCHAR(20),
+                user_feedback VARCHAR(10)
             )
         ''')
-        
+
         # Create index on timestamp for faster queries
         connection.run('''
             CREATE INDEX IF NOT EXISTS idx_timestamp 
             ON sentiment_analyses(timestamp DESC)
         ''')
-        
+
         logger.info("✅ Database tables ready")
     except Exception as e:
         logger.error(f"❌ Error creating tables: {e}")
-
+        
 def close_postgres_connection():
     """Close PostgreSQL connection when application shuts down"""
     global connection
