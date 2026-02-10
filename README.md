@@ -13,11 +13,13 @@ A full-stack web application for real-time sentiment analysis using AI. Features
 ### Core Functionality
 
 **🎯 Dual-Model Sentiment Analysis**
+
 - **Fast Mode**: VADER for quick analysis (~50ms)
 - **Precise Mode**: Hybrid analyzer combining VADER + TextBlob + custom pattern recognition (~70ms)
 - 10-15% accuracy improvement over baseline VADER
 
 **📊 Batch CSV Analysis** ✨ NEW!
+
 - Upload CSV files with up to 1000 rows
 - Real-time progress tracking with animated progress bar
 - Batch sentiment analysis with Fast/Precise mode selection
@@ -26,6 +28,7 @@ A full-stack web application for real-time sentiment analysis using AI. Features
 - Client-side processing optimized for free-tier hosting
 
 **🧠 Advanced Text Understanding**
+
 - Negation handling ("not bad" → positive ✅)
 - Modern slang recognition ("slaps", "bussin", "hits different")
 - Irony/sarcasm detection ("thanks for nothing" → negative ✅)
@@ -33,6 +36,7 @@ A full-stack web application for real-time sentiment analysis using AI. Features
 - Confidence metrics based on model agreement
 
 **🛡️ Content Moderation**
+
 - 41+ harmful content patterns
 - Real-time content flagging
 - Automatic harmful content filtering
@@ -40,6 +44,7 @@ A full-stack web application for real-time sentiment analysis using AI. Features
 - Severity classification
 
 **📊 Historical Tracking**
+
 - PostgreSQL database integration
 - View analysis history with pagination
 - Load more/less functionality
@@ -47,6 +52,7 @@ A full-stack web application for real-time sentiment analysis using AI. Features
 - Timestamp tracking for all analyses
 
 **🎨 Modern UI/UX**
+
 - Beautiful gradient design with dark mode support
 - Responsive layout (mobile, tablet, desktop)
 - Real-time emoji indicators
@@ -55,6 +61,7 @@ A full-stack web application for real-time sentiment analysis using AI. Features
 - Batch upload with file validation
 
 **⚡ Production-Ready**
+
 - Optimized for 512MB RAM environments
 - No external API dependencies
 - Fast response times
@@ -85,22 +92,26 @@ User Input → Content Moderation → Model Selection
 ### Hybrid Model Components
 
 **1. VADER Analysis (60% weight)**
+
 - Fast rule-based sentiment scoring
 - Emoticon and punctuation awareness
 - Intensity modifiers (e.g., "very", "extremely")
 
 **2. TextBlob Analysis (40% weight)**
+
 - Pattern-based sentiment detection
 - Better negation handling than VADER
 - Subjectivity scoring
 
 **3. Custom Pattern Boosting**
+
 - Negation patterns: "not bad", "don't hate", "not terrible"
 - Modern slang: "slaps", "bussin", "fire", "hits different", "no cap"
 - Irony detection: "thanks for nothing", "oh great" + problem words
 - Lukewarm expressions: "it's fine", "okay I guess"
 
 **4. Smart Score Combination**
+
 - Weighted averaging of VADER and TextBlob
 - Pattern boost application
 - Confidence calculation based on model agreement
@@ -109,18 +120,18 @@ User Input → Content Moderation → Model Selection
 ### Example Improvements
 
 | Text                     | Fast Mode (VADER)   | Precise Mode (Hybrid) | Winner    |
-|--------------------------|---------------------|----------------------|-----------|
-| "This is not bad at all" | 😞 Negative (-0.34) | 😊 Positive (+0.42)  | ✅ Hybrid |
-| "This movie slaps!"      | 😞 Negative (-0.34) | 😊 Positive (+0.63)  | ✅ Hybrid |
-| "Thanks for nothing"     | 😊 Positive (+0.33) | 😞 Negative (-0.52)  | ✅ Hybrid |
-| "It's fine I guess"      | 😊 Positive (+0.22) | 😐 Neutral (-0.05)   | ✅ Hybrid |
-| "I don't hate it"        | 😞 Negative (-0.58) | 😊 Positive (+0.18)  | ✅ Hybrid |
-| "I love this!"           | 😊 Positive (+0.80) | 😊 Positive (+0.85)  | Both work |
+| ------------------------ | ------------------- | --------------------- | --------- |
+| "This is not bad at all" | 😞 Negative (-0.34) | 😊 Positive (+0.42)   | ✅ Hybrid |
+| "This movie slaps!"      | 😞 Negative (-0.34) | 😊 Positive (+0.63)   | ✅ Hybrid |
+| "Thanks for nothing"     | 😊 Positive (+0.33) | 😞 Negative (-0.52)   | ✅ Hybrid |
+| "It's fine I guess"      | 😊 Positive (+0.22) | 😐 Neutral (-0.05)    | ✅ Hybrid |
+| "I don't hate it"        | 😞 Negative (-0.58) | 😊 Positive (+0.18)   | ✅ Hybrid |
+| "I love this!"           | 😊 Positive (+0.80) | 😊 Positive (+0.85)   | Both work |
 
 ### Performance Metrics
 
 | Metric            | Fast Mode | Precise Mode |
-|-------------------|-----------|--------------|
+| ----------------- | --------- | ------------ |
 | Response Time     | ~50ms     | ~70ms        |
 | Memory Usage      | 5MB       | 8MB          |
 | Overall Accuracy  | ~75%      | ~85-87%      |
@@ -493,32 +504,38 @@ This project demonstrates:
 Use this script to showcase the project:
 
 **1. Show Fast Mode**
+
 - Input: "I love this!"
 - Shows instant response (~50ms)
 - Positive result ✅
 
 **2. Show Precise Mode Advantage**
+
 - Input: "This is not bad at all"
 - Fast Mode: 😞 Negative ❌
 - Precise Mode: 😊 Positive ✅
 - Explain: Hybrid model understands negation
 
 **3. Show Pattern Detection**
+
 - Input: "This movie slaps!"
 - Show `details` in response
 - Explain: Custom pattern boost for slang
 
 **4. Show Content Moderation**
+
 - Try harmful content
 - Show warning banner + censored text
 - Explain: 41+ patterns for safety
 
 **5. Show History Tracking**
+
 - Scroll to history section
 - Show multiple analyses
 - Demonstrate pagination (View More/Less)
 
 **6. Show Batch CSV Analysis** ✨ NEW!
+
 - Scroll to Batch CSV Analysis section
 - Upload sample CSV with product reviews
 - Select "text" column and Fast mode
@@ -546,9 +563,9 @@ Use this script to showcase the project:
 ### Phase 2: Enhancements 🚀 IN PROGRESS
 
 - [x] **Batch analysis (upload CSV file)** ✅ COMPLETED!
-- [ ] Export batch results to CSV
-- [ ] Sentiment trend charts (Recharts integration)
-- [ ] User feedback system (thumbs up/down)
+- [x] Export batch results to CSV
+- [x] Sentiment trend charts (Recharts integration)
+- [x] User feedback system (thumbs up/down)
 - [ ] API key authentication
 - [ ] Rate limiting (SlowAPI)
 - [ ] Multi-language support
@@ -563,6 +580,15 @@ Use this script to showcase the project:
 - [ ] Social media integration
 
 ---
+
+## 🚀 Performance Note
+
+This application is optimized to run on free-tier hosting (512MB RAM) while maintaining
+<100ms response times. The backend may take 30-60 seconds to wake on first request after
+15 minutes of inactivity (Render free tier limitation), but subsequent requests are instant.
+
+**Tech Achievement:** Achieved production-grade performance within severe resource constraints
+through lazy loading, efficient PostgreSQL queries, and optimized dual-mode architecture.
 
 ## 🤝 Contributing
 
