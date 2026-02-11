@@ -309,7 +309,7 @@ Retrieve recent sentiment analyses
 
 **Response:**
 
-```json
+````json
 {
   "count": 10,
   "limit": 10,
@@ -333,6 +333,30 @@ Retrieve recent sentiment analyses
       }
     }
   ]
+}
+
+#### POST /api/v1/sentiment/feedback/{analysis_id}
+
+Submit user feedback (thumbs up/down) for an analysis
+
+**Parameters:**
+
+- `analysis_id` (required): ID of the sentiment analysis
+- `feedback` (required): "positive" or "negative"
+
+**Request:**
+```bash
+curl -X POST "https://sentiment-dashboard-api.onrender.com/api/v1/sentiment/feedback/123?feedback=positive"
+````
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "analysis_id": 123,
+  "feedback": "positive",
+  "message": "Feedback recorded successfully"
 }
 ```
 
@@ -534,7 +558,7 @@ Use this script to showcase the project:
 - Show multiple analyses
 - Demonstrate pagination (View More/Less)
 
-**6. Show Batch CSV Analysis** ✨ NEW!
+**6. Show Batch CSV Analysis** ✨
 
 - Scroll to Batch CSV Analysis section
 - Upload sample CSV with product reviews
@@ -542,6 +566,33 @@ Use this script to showcase the project:
 - Watch animated progress bar fill up
 - View results table with sentiment badges
 - Explain: Client-side processing within free-tier constraints
+
+**7. Analytics Dashboard** ✨
+
+- Visual sentiment analytics with Recharts
+- Real-time statistics: total analyses, positive/negative percentages, average scores
+- Pie chart showing sentiment distribution across all analyses
+- Timeline chart displaying compound scores over time with moving average
+- Score distribution chart for recent 50 analyses
+- Refresh button to reload latest data
+- Responsive design with dark mode support
+
+**8. User Feedback System** ✨
+
+- Interactive thumbs up/down buttons on each history item
+- Real-time feedback submission via API
+- Visual confirmation with "Thanks for your feedback!" message
+- Persistent feedback storage in PostgreSQL
+- Prevents duplicate votes per analysis
+- Hover effects and disabled states for better UX
+
+**9. Model Tracking** ✨
+
+- Visual badges showing which model analyzed each text
+- ⚡ Fast mode badge (blue) for VADER analyses
+- 🎯 Precise mode badge (purple) for Hybrid analyses
+- Model information saved in database for historical tracking
+- Export includes model type in CSV downloads
 
 ---
 
@@ -560,12 +611,17 @@ Use this script to showcase the project:
 - [x] Content moderation
 - [x] Historical tracking with pagination
 
-### Phase 2: Enhancements 🚀 IN PROGRESS
+### Phase 2: Enhancements ✅ **COMPLETED!**
 
-- [x] **Batch analysis (upload CSV file)** ✅ COMPLETED!
-- [x] Export batch results to CSV
-- [x] Sentiment trend charts (Recharts integration)
-- [x] User feedback system (thumbs up/down)
+- [x] **Batch CSV analysis** - Upload and analyze up to 1000 rows ✅
+- [x] **Export batch results to CSV** - Download processed results with summary stats ✅
+- [x] **Export history to CSV** - Download all analysis history ✅
+- [x] **Sentiment trend charts** - Interactive Recharts dashboard with:
+  - Pie chart showing sentiment distribution
+  - Timeline chart with moving average
+  - Score distribution for recent 50 analyses
+- [x] **User feedback system** - Thumbs up/down buttons on each analysis ✅
+- [x] **Model tracking** - Visual badges showing Fast (⚡) vs Precise (🎯) mode used ✅
 - [ ] API key authentication
 - [ ] Rate limiting (SlowAPI)
 - [ ] Multi-language support
