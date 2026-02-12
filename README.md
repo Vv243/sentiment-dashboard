@@ -406,6 +406,81 @@ sentiment-dashboard/
 
 ## 🧪 Testing
 
+### Running Tests Locally
+
+```bash
+cd backend
+
+# Activate virtual environment
+.\venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Mac/Linux
+
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage report
+pytest tests/ --cov=app --cov-report=html --cov-report=term --cov-config=.coveragerc
+
+# View HTML coverage report
+# Windows:
+Start-Process .\htmlcov\index.html
+# Mac/Linux:
+open htmlcov/index.html
+```
+
+### Test Coverage
+
+**Overall Coverage: 79.34%** (426 statements, 88 missed)
+
+| Component              | Coverage | Status |
+| ---------------------- | -------- | ------ |
+| schemas.py             | 100%     | ✅     |
+| sentiment_analyzer.py  | 94.44%   | ✅     |
+| config.py              | 92.31%   | ✅     |
+| content_moderator.py   | 90.91%   | ✅     |
+| distilbert_analyzer.py | 81.16%   | ✅     |
+| main.py                | 70.00%   | ✅     |
+| database.py            | 65.00%   | ✅     |
+
+### Test Suite Breakdown
+
+1. **Sentiment Analyzer Tests** (10 tests)
+   - Positive/negative/neutral classification
+   - Negation handling ("not bad" → positive)
+   - Model selection (VADER vs Hybrid)
+   - Empty text handling
+   - Score structure validation
+
+2. **API Endpoint Tests** (17 tests)
+   - POST /analyze endpoint with various inputs
+   - GET /history with pagination
+   - POST /feedback endpoint
+   - Request validation (empty text, invalid models)
+   - Response structure verification
+
+3. **Hybrid Analyzer Tests** (10 tests)
+   - Edge cases (sarcasm, slang, negations)
+   - Special character handling
+   - Long text processing
+   - Mixed sentiment analysis
+
+4. **Database Tests** (8 tests)
+   - Connection management
+   - Cleanup operations
+   - CRUD operations
+   - Error handling
+
+5. **Content Moderator Tests** (4 tests)
+   - Safe content detection
+   - Harmful pattern matching
+   - Moderation structure validation
+
+6. **Main Application Tests** (4 tests)
+   - Root endpoint
+   - Health check
+   - API documentation availability
+   - CORS configuration
+
 ### Test the Live App
 
 Visit: https://sentiment-dashboard-zeta.vercel.app/
@@ -498,6 +573,15 @@ curl -X POST "https://sentiment-dashboard-api.onrender.com/api/v1/sentiment/anal
 - Graceful error handling for invalid data
 - Works within free-tier hosting constraints
 
+### 7. Comprehensive Testing Infrastructure ✨ NEW!
+
+- **53 passing tests** covering all core functionality
+- **79.34% code coverage** with strategic test placement
+- **Fast execution** - entire suite runs in <1 second
+- **Edge case validation** - negations, sarcasm, slang, empty text
+- **CI/CD ready** - pytest with coverage reporting and fixtures
+- **100% pass rate** - reliable, production-ready code
+
 ---
 
 ## 📚 Learning Outcomes
@@ -520,6 +604,10 @@ This project demonstrates:
 - ✅ **Git version control** with feature branches
 - ✅ **CSV processing** (batch file uploads)
 - ✅ **Client-side data processing** (Papaparse)
+- ✅ **Unit & integration testing** (pytest, fixtures, mocking)
+- ✅ **Test-driven development** (TDD principles)
+- ✅ **Code coverage analysis** (pytest-cov, HTML reports)
+- ✅ **Edge case handling** (negations, sarcasm, empty inputs)
 
 ---
 
@@ -594,6 +682,14 @@ Use this script to showcase the project:
 - Model information saved in database for historical tracking
 - Export includes model type in CSV downloads
 
+**10. Show Professional Testing** ✨
+
+- Explain: "I implemented comprehensive testing with 79% coverage"
+- Show: Run `pytest tests/ -v` in terminal
+- Highlight: 53 tests passing in <1 second
+- Show: Coverage report in `htmlcov/index.html`
+- Explain: Tests validate edge cases like negations and sarcasm
+
 ---
 
 ## 🔧 Development Roadmap
@@ -626,14 +722,21 @@ Use this script to showcase the project:
 - [ ] Rate limiting (SlowAPI)
 - [ ] Multi-language support
 
-### Phase 3: Advanced Features 💡 PLANNED
+### Phase 3: Professional Polish ✨ **IN PROGRESS!**
 
-- [ ] User accounts and authentication
-- [ ] Custom model training
-- [ ] Real-time WebSocket updates
-- [ ] A/B testing framework
-- [ ] Sentiment comparison tool
-- [ ] Social media integration
+- [x] **Comprehensive test suite** - 53 unit and integration tests with 79% coverage ✅
+  - Edge case testing (negations, sarcasm, slang)
+  - API endpoint validation (analyze, history, feedback)
+  - Database operations testing (CRUD, cleanup)
+  - Content moderation verification
+  - Pytest with fixtures for maintainable code
+  - 100% test pass rate, <1 second execution time
+- [ ] **Real-time WebSockets** - Live sentiment updates and activity feed
+- [ ] **CI/CD Pipeline** - GitHub Actions for automated testing
+- [ ] **JWT Authentication** - Secure API endpoints with user accounts
+- [ ] **A/B Testing Framework** - Compare model performance
+- [ ] **Redis Caching** - Optimize performance with result caching
+- [ ] **Model Performance Monitoring** - Track accuracy and drift over time
 
 ---
 

@@ -1,0 +1,26 @@
+[run]
+source = app
+omit =
+    */tests/*
+    */venv/*
+    */__pycache__/*
+    */migrations/*
+    # Omit unused collector files
+    app/services/fallback_collector.py
+    app/services/reddit_collector.py
+    app/services/twitter_collector.py
+    app/services/synthetic_data.py
+    app/services/sentiment_service.py
+    # Omit unused API files
+    app/api/collection.py
+    app/api/health.py
+    # Omit unused core files
+    app/core/database.py
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+
+[html]
+directory = htmlcov
