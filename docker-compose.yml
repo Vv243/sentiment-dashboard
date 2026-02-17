@@ -1,29 +1,19 @@
 version: '3.8'
 
 services:
-  # MongoDB Database
-  mongodb:
-    image: mongo:7.0
-    container_name: sentiment_mongodb
+  postgres:
+    image: postgres:14-alpine
+    container_name: sentiment_postgres
     restart: unless-stopped
     ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
+      - "5432:5432"
     environment:
-      MONGO_INITDB_DATABASE: sentiment_db
-
-  # Redis (for Celery)
-  redis:
-    image: redis:7-alpine
-    container_name: sentiment_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
+      POSTGRES_DB: sentiment_local
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     volumes:
-      - redis_data:/data
+      - postgres_data:/var/lib/postgresql/data
 
-  # Backend API
   backend:
     build:
       context: ./backend
@@ -33,18 +23,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MONGODB_URL=mongodb://mongodb:27017
-      - REDIS_URL=redis://redis:6379/0
-    env_file:
-      - ./backend/.env
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/sentiment_local
     depends_on:
-      - mongodb
-      - redis
+      - postgres
     volumes:
       - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  # Frontend
   frontend:
     build:
       context: ./frontend
@@ -63,5 +48,4 @@ services:
     command: npm run dev -- --host
 
 volumes:
-  mongodb_data:
-  redis_data:
+  postgres_data:

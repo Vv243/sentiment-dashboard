@@ -18,7 +18,7 @@ A full-stack web application for real-time sentiment analysis using AI. Features
 - **Precise Mode**: Hybrid analyzer combining VADER + TextBlob + custom pattern recognition (~70ms)
 - 10-15% accuracy improvement over baseline VADER
 
-**📊 Batch CSV Analysis** ✨ NEW!
+**📊 Batch CSV Analysis**
 
 - Upload CSV files with up to 1000 rows
 - Real-time progress tracking with animated progress bar
@@ -63,7 +63,6 @@ A full-stack web application for real-time sentiment analysis using AI. Features
 **⚡ Production-Ready**
 
 - Optimized for 512MB RAM environments
-- No external API dependencies
 - Fast response times
 - CORS enabled for frontend integration
 - Automatic deployment via GitHub
@@ -158,7 +157,7 @@ User Input → Content Moderation → Model Selection
 ### Backend
 
 - **FastAPI** - High-performance Python async API framework
-- **Python 3.13** - Latest Python features
+- **Python 3.12+** - Modern Python features
 - **VADER Sentiment** - Rule-based sentiment analysis
 - **TextBlob** - NLP library for text processing
 - **PostgreSQL (pg8000)** - Database for history tracking
@@ -187,8 +186,37 @@ User Input → Content Moderation → Model Selection
 - Python 3.11+
 - Node.js 18+
 - Git
+- PostgreSQL 14+
+  - Mac: `brew install postgresql@14`
+  - Windows: [Download installer](https://www.postgresql.org/download/windows/)
+  - Linux: `sudo apt install postgresql`
 
-### Local Development
+### Option 1: Automated Setup (Recommended)
+
+**Mac/Linux:**
+```bash
+git clone https://github.com/Vv243/sentiment-dashboard.git
+cd sentiment-dashboard
+chmod +x setup.sh && ./setup.sh
+```
+
+**Windows (PowerShell as Administrator):**
+```powershell
+git clone https://github.com/Vv243/sentiment-dashboard.git
+cd sentiment-dashboard
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+.\setup.ps1
+```
+
+The setup script will automatically:
+- Check all prerequisites
+- Start PostgreSQL
+- Create the local database
+- Set up Python virtual environment
+- Install all dependencies
+- Create `.env` files with correct settings
+
+### Option 2: Manual Setup
 
 #### 1. Clone Repository
 
@@ -197,48 +225,77 @@ git clone https://github.com/Vv243/sentiment-dashboard.git
 cd sentiment-dashboard
 ```
 
-#### 2. Backend Setup
+#### 2. Configure Environment
+
+```bash
+# Copy the example env file
+cp .env.example backend/.env
+
+# Edit backend/.env and set your DATABASE_URL:
+# Mac/Linux: postgresql://YOUR_USERNAME@localhost/sentiment_local
+# Windows:   postgresql://postgres@localhost/sentiment_local
+```
+
+#### 3. Create Database
+
+```bash
+# Mac/Linux
+brew services start postgresql@14
+createdb sentiment_local
+
+# Windows (in psql)
+createdb -U postgres sentiment_local
+```
+
+#### 4. Backend Setup
 
 ```bash
 cd backend
+python3 -m venv venv
 
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# Windows:
-.\venv\Scripts\activate
 # Mac/Linux:
 source venv/bin/activate
+# Windows:
+.\venv\Scripts\Activate.ps1
 
-# Install dependencies
 pip install -r requirements.txt
-
-# Create .env file (optional - for database)
-echo "DATABASE_URL=your_postgresql_url" > .env
-
-# Start server
 python -m uvicorn app.main:app --reload
 ```
 
 Backend runs on **http://localhost:8000**
 
-#### 3. Frontend Setup
+#### 5. Frontend Setup
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Create .env file
 echo "VITE_API_URL=http://localhost:8000" > .env
-
-# Start development server
 npm run dev
 ```
 
 Frontend runs on **http://localhost:3000**
+
+### Starting the Project (After Setup)
+
+Every time you work on the project, open two terminal tabs:
+
+**Terminal 1 (Backend):**
+```bash
+cd backend
+source venv/bin/activate   # Mac/Linux
+# .\venv\Scripts\Activate.ps1  # Windows
+python -m uvicorn app.main:app --reload
+```
+
+**Terminal 2 (Frontend):**
+```bash
+cd frontend
+npm run dev
+```
+
+> **Note:** Make sure PostgreSQL is running first.  
+> Mac: `brew services start postgresql@14`  
+> Windows: PostgreSQL runs as a service automatically after install.
 
 ---
 
@@ -253,21 +310,21 @@ Interactive API documentation available at:
 
 #### POST /api/v1/sentiment/analyze
 
-Analyze sentiment of input text with model selection
+Analyze sentiment of input text with model selection.
 
 **Request:**
 
 ```json
 {
   "text": "This is not bad at all!",
-  "model": "distilbert"
+  "model": "vader"
 }
 ```
 
 **Parameters:**
 
 - `text` (required): Text to analyze (1-5000 characters)
-- `model` (optional): "vader" (fast) or "distilbert" (precise/hybrid), default: "vader"
+- `model` (optional): `"vader"` (fast) or `"distilbert"` (precise/hybrid), default: `"vader"`
 
 **Response:**
 
@@ -301,63 +358,18 @@ Analyze sentiment of input text with model selection
 
 #### GET /api/v1/sentiment/history?limit=10
 
-Retrieve recent sentiment analyses
+Retrieve recent sentiment analyses.
 
 **Parameters:**
 
 - `limit` (optional): Number of records to return (1-100), default: 10
 
-**Response:**
-
-````json
-{
-  "count": 10,
-  "limit": 10,
-  "analyses": [
-    {
-      "id": 123,
-      "text": "This is not bad!",
-      "sentiment": "positive",
-      "emoji": "😊",
-      "scores": {
-        "positive": 0.65,
-        "negative": 0.15,
-        "neutral": 0.2,
-        "compound": 0.5
-      },
-      "timestamp": "2026-01-28T20:30:00",
-      "moderation": {
-        "flagged": false,
-        "reason": null,
-        "severity": "safe"
-      }
-    }
-  ]
-}
-
 #### POST /api/v1/sentiment/feedback/{analysis_id}
 
-Submit user feedback (thumbs up/down) for an analysis
+Submit user feedback (thumbs up/down) for an analysis.
 
-**Parameters:**
-
-- `analysis_id` (required): ID of the sentiment analysis
-- `feedback` (required): "positive" or "negative"
-
-**Request:**
 ```bash
 curl -X POST "https://sentiment-dashboard-api.onrender.com/api/v1/sentiment/feedback/123?feedback=positive"
-````
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "analysis_id": 123,
-  "feedback": "positive",
-  "message": "Feedback recorded successfully"
-}
 ```
 
 ---
@@ -366,39 +378,41 @@ curl -X POST "https://sentiment-dashboard-api.onrender.com/api/v1/sentiment/feed
 
 ```
 sentiment-dashboard/
+├── setup.sh                      # One-command setup for Mac/Linux
+├── setup.ps1                     # One-command setup for Windows
+├── .env.example                  # Environment variable template
+├── docker-compose.yml            # Docker setup (PostgreSQL + backend + frontend)
+│
 ├── backend/                      # FastAPI backend
 │   ├── app/
 │   │   ├── api/                  # API endpoints
-│   │   │   ├── sentiment.py      # Sentiment analysis routes
-│   │   │   ├── collection.py     # Collection endpoints
-│   │   │   └── health.py         # Health check
+│   │   │   └── sentiment.py      # Sentiment analysis routes
+│   │   ├── core/                 # Core configuration
+│   │   │   └── config.py         # App settings
 │   │   ├── models/               # Data models
 │   │   │   └── schemas.py        # Pydantic schemas
 │   │   ├── services/             # Business logic
-│   │   │   ├── sentiment_analyzer.py    # Main analyzer
+│   │   │   ├── sentiment_analyzer.py    # VADER analyzer
 │   │   │   ├── distilbert_analyzer.py   # Hybrid model
 │   │   │   └── content_moderator.py     # Content filtering
-│   │   ├── utils/                # Utilities
-│   │   │   ├── database.py       # PostgreSQL connection
-│   │   │   └── main.py           # FastAPI app entry
-│   │   └── core/                 # Core config
+│   │   ├── database.py           # PostgreSQL connection
+│   │   └── main.py               # FastAPI app entry point
+│   ├── tests/                    # Test suite (53 tests)
 │   ├── requirements.txt          # Python dependencies
-│   ├── start.sh                  # Render startup script
-│   └── .env                      # Environment variables
+│   └── .env                      # Local environment variables (git ignored)
 │
 ├── frontend/                     # React frontend
 │   ├── src/
 │   │   ├── components/           # React components
 │   │   │   └── BatchUpload.jsx   # CSV batch upload
-│   │   ├── services/             # API services
+│   │   ├── services/
 │   │   │   └── api.js            # API client
 │   │   ├── App.jsx               # Main component
 │   │   ├── App.css               # Styling
 │   │   └── main.jsx              # Entry point
 │   ├── package.json
-│   └── .env                      # API URL configuration
+│   └── .env                      # API URL config (git ignored)
 │
-├── .gitignore
 └── README.md
 ```
 
@@ -406,31 +420,32 @@ sentiment-dashboard/
 
 ## 🧪 Testing
 
-### Running Tests Locally
+### Running Tests
 
 ```bash
 cd backend
 
-# Activate virtual environment
-.\venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Mac/Linux
+# Mac/Linux
+source venv/bin/activate
+# Windows
+# .\venv\Scripts\Activate.ps1
 
 # Run all tests
 pytest tests/ -v
 
 # Run with coverage report
-pytest tests/ --cov=app --cov-report=html --cov-report=term --cov-config=.coveragerc
+pytest tests/ --cov=app --cov-report=html --cov-report=term
 
 # View HTML coverage report
-# Windows:
-Start-Process .\htmlcov\index.html
 # Mac/Linux:
 open htmlcov/index.html
+# Windows:
+Start-Process .\htmlcov\index.html
 ```
 
 ### Test Coverage
 
-**Overall Coverage: 79.34%** (426 statements, 88 missed)
+**Overall Coverage: 79.34%** (53 tests, 426 statements)
 
 | Component              | Coverage | Status |
 | ---------------------- | -------- | ------ |
@@ -444,89 +459,32 @@ open htmlcov/index.html
 
 ### Test Suite Breakdown
 
-1. **Sentiment Analyzer Tests** (10 tests)
-   - Positive/negative/neutral classification
-   - Negation handling ("not bad" → positive)
-   - Model selection (VADER vs Hybrid)
-   - Empty text handling
-   - Score structure validation
-
-2. **API Endpoint Tests** (17 tests)
-   - POST /analyze endpoint with various inputs
-   - GET /history with pagination
-   - POST /feedback endpoint
-   - Request validation (empty text, invalid models)
-   - Response structure verification
-
-3. **Hybrid Analyzer Tests** (10 tests)
-   - Edge cases (sarcasm, slang, negations)
-   - Special character handling
-   - Long text processing
-   - Mixed sentiment analysis
-
-4. **Database Tests** (8 tests)
-   - Connection management
-   - Cleanup operations
-   - CRUD operations
-   - Error handling
-
-5. **Content Moderator Tests** (4 tests)
-   - Safe content detection
-   - Harmful pattern matching
-   - Moderation structure validation
-
-6. **Main Application Tests** (4 tests)
-   - Root endpoint
-   - Health check
-   - API documentation availability
-   - CORS configuration
+- **Sentiment Analyzer Tests** (10 tests) - positive/negative/neutral classification, negation handling, model selection
+- **API Endpoint Tests** (17 tests) - all endpoints, request validation, response structure
+- **Hybrid Analyzer Tests** (10 tests) - sarcasm, slang, negations, edge cases
+- **Database Tests** (8 tests) - connection management, CRUD, cleanup, error handling
+- **Content Moderator Tests** (4 tests) - safe content, harmful patterns, severity levels
+- **Main Application Tests** (4 tests) - root endpoint, health check, CORS, docs
 
 ### Test the Live App
 
 Visit: https://sentiment-dashboard-zeta.vercel.app/
 
-#### Negation Test
-
 ```
-Input: "This is not bad at all"
-Fast Mode: 😞 Negative
-Precise Mode: 😊 Positive ✅
-```
-
-#### Slang Test
-
-```
-Input: "This movie slaps!"
-Fast Mode: 😞 Negative
-Precise Mode: 😊 Positive ✅
-```
-
-#### Irony Test
-
-```
-Input: "Thanks for nothing"
-Fast Mode: 😊 Positive
-Precise Mode: 😞 Negative ✅
-```
-
-#### Batch CSV Test
-
-```
-1. Scroll to "Batch CSV Analysis" section
-2. Upload a CSV file with a "text" column
-3. Select column and choose Fast/Precise mode
-4. Watch real-time progress and results!
+Negation:  "This is not bad at all"  → Fast: 😞 Negative | Precise: 😊 Positive ✅
+Slang:     "This movie slaps!"       → Fast: 😞 Negative | Precise: 😊 Positive ✅
+Irony:     "Thanks for nothing"      → Fast: 😊 Positive | Precise: 😞 Negative ✅
 ```
 
 ### Test the API
 
 ```bash
-# Test Fast Mode
+# Fast Mode
 curl -X POST "https://sentiment-dashboard-api.onrender.com/api/v1/sentiment/analyze" \
   -H "Content-Type: application/json" \
   -d '{"text": "This is not bad!", "model": "vader"}'
 
-# Test Precise Mode
+# Precise Mode
 curl -X POST "https://sentiment-dashboard-api.onrender.com/api/v1/sentiment/analyze" \
   -H "Content-Type: application/json" \
   -d '{"text": "This is not bad!", "model": "distilbert"}'
@@ -536,57 +494,25 @@ curl -X POST "https://sentiment-dashboard-api.onrender.com/api/v1/sentiment/anal
 
 ## 🌟 Key Technical Achievements
 
-### 1. Hybrid Model Architecture
+**1. Hybrid Model Architecture** — Combined VADER + TextBlob with custom pattern boosting for 10-15% accuracy improvement while staying under 10MB memory.
 
-- Successfully combined multiple sentiment analysis approaches
-- Achieved measurable accuracy improvements (10-15%)
-- Maintained fast response times (<100ms)
+**2. Resource Optimization** — Engineered to run within Render's 512MB free tier RAM constraint through lazy loading and efficient query design.
 
-### 2. Resource Optimization
+**3. Pattern Recognition System** — Custom regex-based system handling negations, modern slang, and irony detection that traditional models miss.
 
-- Engineered solution to work within 512MB RAM constraints
-- Avoided external API dependencies
-- No model download delays or timeouts
+**4. Production Deployment** — Zero-downtime deployments via GitHub integration on both Vercel (frontend) and Render (backend).
 
-### 3. Pattern Recognition System
+**5. Content Safety** — Comprehensive harmful content detection with 41+ patterns, real-time severity classification, and automatic censoring.
 
-- Custom regex-based pattern matching for edge cases
-- Handles negations, slang, and irony
-- Easily extensible for new patterns
+**6. Batch Processing** — Client-side CSV parsing handles up to 1,000 rows with real-time progress tracking, optimized for free-tier constraints.
 
-### 4. Production Deployment
+**7. Comprehensive Testing** — 53 passing tests with 79.34% coverage, including edge cases for sarcasm, slang, and negation. Full suite runs in under 1 second.
 
-- Zero-downtime deployments via GitHub integration
-- Automatic scaling on both frontend and backend
-- Environment-based configuration
-
-### 5. Content Safety
-
-- Comprehensive harmful content detection (41+ patterns)
-- Real-time moderation with severity classification
-- Automatic censoring for user safety
-
-### 6. Batch Processing Architecture
-
-- Client-side CSV parsing for efficient resource usage
-- Real-time progress tracking with animated UI
-- Graceful error handling for invalid data
-- Works within free-tier hosting constraints
-
-### 7. Comprehensive Testing Infrastructure ✨ NEW!
-
-- **53 passing tests** covering all core functionality
-- **79.34% code coverage** with strategic test placement
-- **Fast execution** - entire suite runs in <1 second
-- **Edge case validation** - negations, sarcasm, slang, empty text
-- **CI/CD ready** - pytest with coverage reporting and fixtures
-- **100% pass rate** - reliable, production-ready code
+**8. Cross-Platform Developer Experience** — One-command setup scripts for Mac, Linux, and Windows reduce onboarding time from 30 minutes to under 5 minutes.
 
 ---
 
 ## 📚 Learning Outcomes
-
-This project demonstrates:
 
 - ✅ **Full-stack development** (React + FastAPI)
 - ✅ **RESTful API design** and implementation
@@ -600,164 +526,50 @@ This project demonstrates:
 - ✅ **Modern JavaScript** (React Hooks, async/await)
 - ✅ **Python async programming** (FastAPI)
 - ✅ **Environment variable management**
-- ✅ **CORS configuration**
 - ✅ **Git version control** with feature branches
 - ✅ **CSV processing** (batch file uploads)
-- ✅ **Client-side data processing** (Papaparse)
 - ✅ **Unit & integration testing** (pytest, fixtures, mocking)
-- ✅ **Test-driven development** (TDD principles)
 - ✅ **Code coverage analysis** (pytest-cov, HTML reports)
 - ✅ **Edge case handling** (negations, sarcasm, empty inputs)
-
----
-
-## 🎬 Demo Script
-
-Use this script to showcase the project:
-
-**1. Show Fast Mode**
-
-- Input: "I love this!"
-- Shows instant response (~50ms)
-- Positive result ✅
-
-**2. Show Precise Mode Advantage**
-
-- Input: "This is not bad at all"
-- Fast Mode: 😞 Negative ❌
-- Precise Mode: 😊 Positive ✅
-- Explain: Hybrid model understands negation
-
-**3. Show Pattern Detection**
-
-- Input: "This movie slaps!"
-- Show `details` in response
-- Explain: Custom pattern boost for slang
-
-**4. Show Content Moderation**
-
-- Try harmful content
-- Show warning banner + censored text
-- Explain: 41+ patterns for safety
-
-**5. Show History Tracking**
-
-- Scroll to history section
-- Show multiple analyses
-- Demonstrate pagination (View More/Less)
-
-**6. Show Batch CSV Analysis** ✨
-
-- Scroll to Batch CSV Analysis section
-- Upload sample CSV with product reviews
-- Select "text" column and Fast mode
-- Watch animated progress bar fill up
-- View results table with sentiment badges
-- Explain: Client-side processing within free-tier constraints
-
-**7. Analytics Dashboard** ✨
-
-- Visual sentiment analytics with Recharts
-- Real-time statistics: total analyses, positive/negative percentages, average scores
-- Pie chart showing sentiment distribution across all analyses
-- Timeline chart displaying compound scores over time with moving average
-- Score distribution chart for recent 50 analyses
-- Refresh button to reload latest data
-- Responsive design with dark mode support
-
-**8. User Feedback System** ✨
-
-- Interactive thumbs up/down buttons on each history item
-- Real-time feedback submission via API
-- Visual confirmation with "Thanks for your feedback!" message
-- Persistent feedback storage in PostgreSQL
-- Prevents duplicate votes per analysis
-- Hover effects and disabled states for better UX
-
-**9. Model Tracking** ✨
-
-- Visual badges showing which model analyzed each text
-- ⚡ Fast mode badge (blue) for VADER analyses
-- 🎯 Precise mode badge (purple) for Hybrid analyses
-- Model information saved in database for historical tracking
-- Export includes model type in CSV downloads
-
-**10. Show Professional Testing** ✨
-
-- Explain: "I implemented comprehensive testing with 79% coverage"
-- Show: Run `pytest tests/ -v` in terminal
-- Highlight: 53 tests passing in <1 second
-- Show: Coverage report in `htmlcov/index.html`
-- Explain: Tests validate edge cases like negations and sarcasm
+- ✅ **Developer experience** (cross-platform setup automation)
 
 ---
 
 ## 🔧 Development Roadmap
 
-### Phase 1: Core Features ✅ COMPLETE
+### Phase 1: Core Features ✅ Complete
 
-- [x] FastAPI backend setup
-- [x] VADER sentiment analysis
+- [x] FastAPI backend + VADER sentiment analysis
 - [x] React frontend with Vite
-- [x] RESTful API design
 - [x] PostgreSQL integration
-- [x] Production deployment
-- [x] Hybrid model (VADER + TextBlob)
-- [x] Pattern recognition system
-- [x] Content moderation
+- [x] Production deployment (Vercel + Render)
+- [x] Hybrid model (VADER + TextBlob + pattern recognition)
+- [x] Content moderation (41+ patterns)
 - [x] Historical tracking with pagination
 
-### Phase 2: Enhancements ✅ **COMPLETED!**
+### Phase 2: Enhancements ✅ Complete
 
-- [x] **Batch CSV analysis** - Upload and analyze up to 1000 rows ✅
-- [x] **Export batch results to CSV** - Download processed results with summary stats ✅
-- [x] **Export history to CSV** - Download all analysis history ✅
-- [x] **Sentiment trend charts** - Interactive Recharts dashboard with:
-  - Pie chart showing sentiment distribution
-  - Timeline chart with moving average
-  - Score distribution for recent 50 analyses
-- [x] **User feedback system** - Thumbs up/down buttons on each analysis ✅
-- [x] **Model tracking** - Visual badges showing Fast (⚡) vs Precise (🎯) mode used ✅
-- [ ] API key authentication
-- [ ] Rate limiting (SlowAPI)
-- [ ] Multi-language support
+- [x] Batch CSV analysis (up to 1,000 rows)
+- [x] Export results and history to CSV
+- [x] Analytics dashboard with Recharts (pie, timeline, distribution charts)
+- [x] User feedback system (thumbs up/down)
+- [x] Model tracking with visual badges (⚡ Fast / 🎯 Precise)
 
-### Phase 3: Professional Polish ✨ **IN PROGRESS!**
+### Phase 3: Professional Polish 🚧 In Progress
 
-- [x] **Comprehensive test suite** - 53 unit and integration tests with 79% coverage ✅
-  - Edge case testing (negations, sarcasm, slang)
-  - API endpoint validation (analyze, history, feedback)
-  - Database operations testing (CRUD, cleanup)
-  - Content moderation verification
-  - Pytest with fixtures for maintainable code
-  - 100% test pass rate, <1 second execution time
-- [ ] **Real-time WebSockets** - Live sentiment updates and activity feed
-- [ ] **CI/CD Pipeline** - GitHub Actions for automated testing
-- [ ] **JWT Authentication** - Secure API endpoints with user accounts
-- [ ] **A/B Testing Framework** - Compare model performance
-- [ ] **Redis Caching** - Optimize performance with result caching
-- [ ] **Model Performance Monitoring** - Track accuracy and drift over time
+- [x] Comprehensive test suite (53 tests, 79% coverage)
+- [x] Cross-platform setup scripts (Mac/Linux/Windows)
+- [ ] **OpenAI GPT-4o-mini integration** — emotion detection, AI reasoning explanations
+- [ ] **CI/CD Pipeline** — GitHub Actions for automated testing on every push
+- [ ] **Redis caching** — reduce API costs by 80% through request deduplication
+- [ ] **JWT Authentication** — secure API endpoints with user accounts
+- [ ] **WebSockets** — real-time live sentiment updates
 
 ---
 
 ## 🚀 Performance Note
 
-This application is optimized to run on free-tier hosting (512MB RAM) while maintaining
-<100ms response times. The backend may take 30-60 seconds to wake on first request after
-15 minutes of inactivity (Render free tier limitation), but subsequent requests are instant.
-
-**Tech Achievement:** Achieved production-grade performance within severe resource constraints
-through lazy loading, efficient PostgreSQL queries, and optimized dual-mode architecture.
-
-## 🤝 Contributing
-
-This is a personal portfolio project, but suggestions are welcome!
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+This application is optimized for free-tier hosting (512MB RAM) with <100ms response times. The backend may take 30-60 seconds to wake on first request after 15 minutes of inactivity (Render free tier cold start), but subsequent requests are instant.
 
 ---
 
@@ -781,15 +593,6 @@ MIT License - feel free to use this project for learning!
 - **React** - Meta/Facebook
 - **Papaparse** - Matt Holt
 - **Vercel & Render** - Deployment platforms
-
----
-
-## 📧 Contact
-
-For questions or opportunities:
-
-- GitHub: [@Vv243](https://github.com/Vv243)
-- Project Link: [https://github.com/Vv243/sentiment-dashboard](https://github.com/Vv243/sentiment-dashboard)
 
 ---
 

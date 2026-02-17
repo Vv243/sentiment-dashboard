@@ -36,9 +36,10 @@ class Settings(BaseSettings):
     USE_SYNTHETIC_FALLBACK: bool = True
     MIN_REAL_POSTS_THRESHOLD: int = 5
     
-    class Config:
+class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "allow"
 
 
 # Create a global settings object
