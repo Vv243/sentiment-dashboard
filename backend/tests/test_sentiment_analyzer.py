@@ -41,7 +41,7 @@ class TestSentimentAnalyzer:
     def test_negation_handling_hybrid(self, sample_texts):
         """Test that 'not bad' is correctly interpreted with Hybrid model"""
         analyzer = SentimentAnalyzer()
-        result = analyzer.analyze(sample_texts["negation"], model="distilbert")
+        result = analyzer.analyze(sample_texts["negation"], model="hybrid")
         
         # "not bad" should NOT be classified as negative
         assert result["sentiment"] != "negative"
@@ -76,9 +76,9 @@ class TestSentimentAnalyzer:
         assert result["model"] == "vader"
     
     def test_model_selection_hybrid(self, sample_texts):
-        """Test that Hybrid model is used when distilbert is specified"""
+        """Test that Hybrid model is used when hybrid is specified"""
         analyzer = SentimentAnalyzer()
-        result = analyzer.analyze(sample_texts["positive"], model="distilbert")
+        result = analyzer.analyze(sample_texts["positive"], model="hybrid")
         
         assert result["model"] == "hybrid"
     

@@ -14,7 +14,7 @@ from enum import Enum
 class SentimentRequest(BaseModel):
     """Request model for sentiment analysis"""
     text: str = Field(..., min_length=1, max_length=5000)
-    model: str = Field(default="vader", pattern="^(vader|distilbert)$")
+    model: str = Field(default="vader", pattern="^(vader|hybrid|gpt-4o-mini)$")
     
     class Config:
         json_schema_extra = {

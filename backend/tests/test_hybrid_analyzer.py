@@ -1,6 +1,6 @@
 # backend/tests/test_hybrid_analyzer.py
 import pytest
-from app.services.distilbert_analyzer import hybrid_analyzer
+from app.services.hybrid_analyzer import hybrid_analyzer
 
 class TestHybridAnalyzer:
     """Test suite for hybrid analyzer (VADER + TextBlob + Patterns)"""

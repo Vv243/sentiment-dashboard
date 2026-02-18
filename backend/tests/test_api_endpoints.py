@@ -28,7 +28,7 @@ class TestSentimentAPI:
             "/api/v1/sentiment/analyze",
             json={
                 "text": "This is amazing!",
-                "model": "distilbert"
+                "model": "hybrid"
             }
         )
         
