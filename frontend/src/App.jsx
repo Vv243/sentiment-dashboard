@@ -305,12 +305,21 @@ function App() {
               </button>
               <button
                 type="button"
-                className={`model-option ${selectedModel === 'distilbert' ? 'active' : ''}`}
-                onClick={() => setSelectedModel('distilbert')}
+                className={`model-option ${selectedModel === 'hybrid' ? 'active' : ''}`}
+                onClick={() => setSelectedModel('hybrid')}
               >
                 <span className="model-icon">🎯</span>
                 <span className="model-name">Precise</span>
                 <span className="model-time">~200ms</span>
+              </button>
+              <button
+                type="button"
+                className={`model-option ${selectedModel === 'gpt-4o-mini' ? 'active' : ''}`}
+                onClick={() => setSelectedModel('gpt-4o-mini')}
+              >
+                <span className="model-icon">🧠</span>
+                <span className="model-name">AI</span>
+                <span className="model-time">~2s</span>
               </button>
             </div>
           </div>
@@ -338,51 +347,67 @@ function App() {
 
         {error && <div className="error-message">❌ {error}</div>}
 
-        {result && (
-          <div className="result-card">
-            <h2>Latest Analysis</h2>
+       {result && (
+  <div className="result-card">
+    <h2>Latest Analysis</h2>
 
-            {/* Show warning if content is harmful */}
-            {result.moderation?.flagged && (
-              <div className="moderation-warning">
-                ⚠️ <strong>Content Moderation Alert:</strong> {result.moderation.reason}
-              </div>
-            )}
+    {result.moderation?.flagged && (
+      <div className="moderation-warning">
+        ⚠️ <strong>Content Moderation Alert:</strong> {result.moderation.reason}
+      </div>
+    )}
 
-            <div className="sentiment-display">
-              <span className="emoji">{result.emoji}</span>
-              <span className="sentiment-label">{result.sentiment}</span>
-            </div>
+    <div className="sentiment-display">
+      <span className="emoji">{result.emoji}</span>
+      <span className="sentiment-label">{result.sentiment}</span>
+    </div>
 
-            <div className="scores">
-              <h3>Detailed Scores</h3>
-              <div className="score-grid">
-                <div className="score-item">
-                  <span className="score-label">Positive</span>
-                  <span className="score-value">{(result.scores.positive * 100).toFixed(1)}%</span>
-                </div>
-                <div className="score-item">
-                  <span className="score-label">Negative</span>
-                  <span className="score-value">{(result.scores.negative * 100).toFixed(1)}%</span>
-                </div>
-                <div className="score-item">
-                  <span className="score-label">Neutral</span>
-                  <span className="score-value">{(result.scores.neutral * 100).toFixed(1)}%</span>
-                </div>
-                <div className="score-item">
-                  <span className="score-label">Compound</span>
-                  <span className="score-value">{result.scores.compound.toFixed(3)}</span>
-                </div>
-              </div>
-            </div>
+    <div className="scores">
+      <h3>Detailed Scores</h3>
+      <div className="score-grid">
+        <div className="score-item">
+          <span className="score-label">Positive</span>
+          <span className="score-value">{(result.scores.positive * 100).toFixed(1)}%</span>
+        </div>
+        <div className="score-item">
+          <span className="score-label">Negative</span>
+          <span className="score-value">{(result.scores.negative * 100).toFixed(1)}%</span>
+        </div>
+        <div className="score-item">
+          <span className="score-label">Neutral</span>
+          <span className="score-value">{(result.scores.neutral * 100).toFixed(1)}%</span>
+        </div>
+        <div className="score-item">
+          <span className="score-label">Compound</span>
+          <span className="score-value">{result.scores.compound.toFixed(3)}</span>
+        </div>
+      </div>
+    </div>
 
-            <div className="analyzed-text">
-              <h3>Analyzed Text</h3>
-              <p>"{censorText(result.text, result.moderation?.flagged)}"</p>
-            </div>
-          </div>
-        )}
+    <div className="analyzed-text">
+      <h3>Analyzed Text</h3>
+      <p>"{censorText(result.text, result.moderation?.flagged)}"</p>
+    </div>
 
+    {result.reasoning && (
+      <div className="reasoning-section">
+        <h3>🧠 AI Reasoning</h3>
+        <p>{result.reasoning}</p>
+      </div>
+    )}
+
+    {result.emotions && result.emotions.length > 0 && (
+      <div className="emotions-section">
+        <h3>💭 Emotions Detected</h3>
+        <div className="emotions-list">
+          {result.emotions.map((emotion, i) => (
+            <span key={i} className="emotion-tag">{emotion}</span>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+)}
         {/* History Section */}
         <div className="history-section">
           <div className="history-header">
@@ -434,7 +459,7 @@ function App() {
                         <span>😞 {(item.scores.negative * 100).toFixed(0)}%</span>
                         <span>📊 {item.scores.compound.toFixed(2)}</span>
                         <span className={`model-badge ${item.model || 'vader'}`}>
-                          {item.model === 'distilbert' ? '🎯 Precise' : '⚡ Fast'}
+                          {item.model === 'gpt-4o-mini' ? '🧠 AI' : item.model === 'hybrid' ? '🎯 Precise' : '⚡ Fast'}
                         </span>
                       </div>
 

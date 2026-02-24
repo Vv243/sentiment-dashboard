@@ -51,6 +51,9 @@ class SentimentResponse(BaseModel):
     saved_to_db: bool
     model: str
     confidence: Optional[float] = None
+    emotions: Optional[List[str]] = None
+    reasoning: Optional[str] = None
+    cached: Optional[bool] = None
 
 
 # ============================================

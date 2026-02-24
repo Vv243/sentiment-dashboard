@@ -40,11 +40,13 @@ async def analyze_sentiment(request: SentimentRequest):
         # Don't save harmful content to database
         if conn is not None and not result['moderation']['flagged']:
             conn.run('''
-                INSERT INTO sentiment_analyses 
-                (text, sentiment, emoji, positive, negative, neutral, compound, 
-                 timestamp, flagged, moderation_reason, moderation_severity, model)
-                VALUES (:text, :sentiment, :emoji, :positive, :negative, :neutral, :compound, 
-                        :timestamp, :flagged, :reason, :severity, :model)
+                INSERT INTO sentiment_analyses
+                (text, sentiment, emoji, positive, negative, neutral, compound,
+                 timestamp, flagged, moderation_reason, moderation_severity, model,
+                 emotions, reasoning)
+                VALUES (:text, :sentiment, :emoji, :positive, :negative, :neutral, :compound,
+                        :timestamp, :flagged, :reason, :severity, :model,
+                        :emotions, :reasoning)
             ''',
                 text=request.text,
                 sentiment=result['sentiment'],
@@ -57,7 +59,9 @@ async def analyze_sentiment(request: SentimentRequest):
                 flagged=result['moderation']['flagged'],
                 reason=result['moderation']['reason'],
                 severity=result['moderation']['severity'],
-                model=request.model
+                model=request.model,
+                emotions=str(result.get('emotions', [])),
+                reasoning=result.get('reasoning', '')
             )
             saved_to_db = True
             logger.info(f"💾 Saved sentiment analysis to PostgreSQL")
