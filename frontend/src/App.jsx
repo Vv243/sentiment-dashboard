@@ -6,6 +6,46 @@ import BatchUpload from './components/BatchUpload'
 // API URL from environment variable
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
+// Sample texts to showcase model differences
+const SAMPLE_TEXTS = [
+  {
+    label: '😏 Sarcasm',
+    text: 'Oh great, another Monday. Just what I needed.',
+    model: 'gpt-4o-mini',
+    hint: 'GPT detects sarcasm, VADER gets fooled',
+  },
+  {
+    label: '🎭 Mixed Emotions',
+    text: 'I got the job offer but have to move away from my family.',
+    model: 'gpt-4o-mini',
+    hint: 'GPT detects joy + sadness simultaneously',
+  },
+  {
+    label: '🔄 Negation',
+    text: 'This is not bad at all, actually pretty decent.',
+    model: 'hybrid',
+    hint: 'Hybrid handles negation better than VADER',
+  },
+  {
+    label: '🤙 Slang',
+    text: 'That concert absolutely slapped, no cap.',
+    model: 'hybrid',
+    hint: 'Hybrid understands modern slang',
+  },
+  {
+    label: '⚡ Simple Positive',
+    text: 'I love this product! Best purchase I have made all year.',
+    model: 'vader',
+    hint: 'VADER is fast and accurate for clear sentiment',
+  },
+  {
+    label: '🗡️ Irony',
+    text: 'Thanks for nothing, really appreciate it.',
+    model: 'hybrid',
+    hint: 'Hybrid catches ironic expressions',
+  },
+]
+
 // Comprehensive censor function - replaces all harmful content with asterisks
 const censorText = (text, isFlagged) => {
   if (!isFlagged) return text
@@ -241,6 +281,9 @@ function App() {
     setResult(null)
 
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60s timeout
+
       const response = await fetch(`${API_URL}/api/v1/sentiment/analyze`, {
         method: 'POST',
         headers: {
@@ -248,9 +291,11 @@ function App() {
         },
         body: JSON.stringify({
           text,
-          model: selectedModel, // Include selected model
+          model: selectedModel,
         }),
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error('Failed to analyze sentiment')
@@ -266,7 +311,11 @@ function App() {
       // Clear input
       setText('')
     } catch (err) {
-      setError(err.message)
+      if (err.name == 'AbortError') {
+        setError('Request timed out. The server may be waking up — please try again in 30 seconds.')
+      } else {
+        setError(err.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -324,6 +373,27 @@ function App() {
             </div>
           </div>
 
+          {/* Sample Texts */}
+          <div className="sample-texts">
+            <span className="sample-texts-label">✨ Try an example:</span>
+            <div className="sample-buttons">
+              {SAMPLE_TEXTS.map((sample, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="sample-btn"
+                  onClick={() => {
+                    setText(sample.text)
+                    setSelectedModel(sample.model)
+                  }}
+                  title={sample.hint}
+                >
+                  {sample.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -347,67 +417,69 @@ function App() {
 
         {error && <div className="error-message">❌ {error}</div>}
 
-       {result && (
-  <div className="result-card">
-    <h2>Latest Analysis</h2>
+        {result && (
+          <div className="result-card">
+            <h2>Latest Analysis</h2>
 
-    {result.moderation?.flagged && (
-      <div className="moderation-warning">
-        ⚠️ <strong>Content Moderation Alert:</strong> {result.moderation.reason}
-      </div>
-    )}
+            {result.moderation?.flagged && (
+              <div className="moderation-warning">
+                ⚠️ <strong>Content Moderation Alert:</strong> {result.moderation.reason}
+              </div>
+            )}
 
-    <div className="sentiment-display">
-      <span className="emoji">{result.emoji}</span>
-      <span className="sentiment-label">{result.sentiment}</span>
-    </div>
+            <div className="sentiment-display">
+              <span className="emoji">{result.emoji}</span>
+              <span className="sentiment-label">{result.sentiment}</span>
+            </div>
 
-    <div className="scores">
-      <h3>Detailed Scores</h3>
-      <div className="score-grid">
-        <div className="score-item">
-          <span className="score-label">Positive</span>
-          <span className="score-value">{(result.scores.positive * 100).toFixed(1)}%</span>
-        </div>
-        <div className="score-item">
-          <span className="score-label">Negative</span>
-          <span className="score-value">{(result.scores.negative * 100).toFixed(1)}%</span>
-        </div>
-        <div className="score-item">
-          <span className="score-label">Neutral</span>
-          <span className="score-value">{(result.scores.neutral * 100).toFixed(1)}%</span>
-        </div>
-        <div className="score-item">
-          <span className="score-label">Compound</span>
-          <span className="score-value">{result.scores.compound.toFixed(3)}</span>
-        </div>
-      </div>
-    </div>
+            <div className="scores">
+              <h3>Detailed Scores</h3>
+              <div className="score-grid">
+                <div className="score-item">
+                  <span className="score-label">Positive</span>
+                  <span className="score-value">{(result.scores.positive * 100).toFixed(1)}%</span>
+                </div>
+                <div className="score-item">
+                  <span className="score-label">Negative</span>
+                  <span className="score-value">{(result.scores.negative * 100).toFixed(1)}%</span>
+                </div>
+                <div className="score-item">
+                  <span className="score-label">Neutral</span>
+                  <span className="score-value">{(result.scores.neutral * 100).toFixed(1)}%</span>
+                </div>
+                <div className="score-item">
+                  <span className="score-label">Compound</span>
+                  <span className="score-value">{result.scores.compound.toFixed(3)}</span>
+                </div>
+              </div>
+            </div>
 
-    <div className="analyzed-text">
-      <h3>Analyzed Text</h3>
-      <p>"{censorText(result.text, result.moderation?.flagged)}"</p>
-    </div>
+            <div className="analyzed-text">
+              <h3>Analyzed Text</h3>
+              <p>"{censorText(result.text, result.moderation?.flagged)}"</p>
+            </div>
 
-    {result.reasoning && (
-      <div className="reasoning-section">
-        <h3>🧠 AI Reasoning</h3>
-        <p>{result.reasoning}</p>
-      </div>
-    )}
+            {result.reasoning && (
+              <div className="reasoning-section">
+                <h3>🧠 AI Reasoning</h3>
+                <p>{result.reasoning}</p>
+              </div>
+            )}
 
-    {result.emotions && result.emotions.length > 0 && (
-      <div className="emotions-section">
-        <h3>💭 Emotions Detected</h3>
-        <div className="emotions-list">
-          {result.emotions.map((emotion, i) => (
-            <span key={i} className="emotion-tag">{emotion}</span>
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
-)}
+            {result.emotions && result.emotions.length > 0 && (
+              <div className="emotions-section">
+                <h3>💭 Emotions Detected</h3>
+                <div className="emotions-list">
+                  {result.emotions.map((emotion, i) => (
+                    <span key={i} className="emotion-tag">
+                      {emotion}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         {/* History Section */}
         <div className="history-section">
           <div className="history-header">
@@ -459,7 +531,11 @@ function App() {
                         <span>😞 {(item.scores.negative * 100).toFixed(0)}%</span>
                         <span>📊 {item.scores.compound.toFixed(2)}</span>
                         <span className={`model-badge ${item.model || 'vader'}`}>
-                          {item.model === 'gpt-4o-mini' ? '🧠 AI' : item.model === 'hybrid' ? '🎯 Precise' : '⚡ Fast'}
+                          {item.model === 'gpt-4o-mini'
+                            ? '🧠 AI'
+                            : item.model === 'hybrid'
+                              ? '🎯 Precise'
+                              : '⚡ Fast'}
                         </span>
                       </div>
 
