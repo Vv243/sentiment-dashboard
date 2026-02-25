@@ -14,22 +14,23 @@ A production full-stack web application for AI-powered sentiment analysis. Featu
 
 | Mode | Model | Speed | Cost | Best For |
 |------|-------|-------|------|----------|
-| Fast | VADER | ~50ms | Free | Simple, high-volume text |
-| Precise | Hybrid VADER+TextBlob | ~200ms | Free | Negations, slang, irony |
-| AI | GPT-4o-mini | ~1-2s | ~$0.000045/call | Sarcasm, mixed emotions, nuance |
+| ⚡ Fast | VADER | ~50ms | Free | Simple, high-volume text |
+| 🎯 Precise | Hybrid VADER+TextBlob | ~200ms | Free | Negations, slang, irony |
+| 🧠 AI | GPT-4o-mini | ~1-2s | ~$0.000045/call | Sarcasm, mixed emotions, nuance |
 
 **Model comparison on real examples:**
 
-| Text | Fast (VADER) | Precise (Hybrid) | AI (GPT-4o-mini) |
-|------|-------------|-----------------|------------------|
+| Text | ⚡ Fast (VADER) | 🎯 Precise (Hybrid) | 🧠 AI (GPT-4o-mini) |
+|------|----------------|---------------------|----------------------|
 | "This is not bad at all" | Negative (-0.34) | Positive (+0.42) | Positive (+0.40) |
-| "This movie slaps!" | Negative (-0.34) | Positive (+0.63) | Positive (+0.70) |
+| "That concert slapped, no cap" | Negative (-0.34) | Positive (+0.63) | Positive (+0.70) |
 | "Thanks for nothing" | Positive (+0.33) | Negative (-0.52) | Negative (-0.60) |
 | "Oh great, another Monday." | Positive (+0.62) | Positive (+0.40) | **Negative (-0.50)** |
 | "Excited but also terrified." | Negative (-0.88) | Neutral (-0.10) | **Mixed (+0.20) [joy, fear]** |
 
 ### Full Feature Set
 
+- **Interactive examples** — 6 curated sample texts that auto-select the best model, instantly showcasing each model's strengths
 - **Emotion detection** — 8 emotions (joy, sadness, anger, fear, surprise, disgust, trust, anticipation) via GPT
 - **AI reasoning explanations** — GPT explains which words drove its classification
 - **LRU caching** — 80% OpenAI API cost reduction (~$0.26 total for 3 months of live demo usage)
@@ -86,7 +87,7 @@ Model Router (sentiment_analyzer.py)
 }
 ```
 
-This design means adding a 4th model in the future only requires implementing the contract — nothing else changes.
+This design means adding a 4th model only requires implementing the contract — nothing else changes.
 
 ### Precise Mode — Hybrid Analyzer
 
@@ -154,7 +155,7 @@ sentiment-dashboard/
     ├── package.json
     ├── .env                         # VITE_API_URL
     └── src/
-        ├── App.jsx                  # Model selector, analyze form, results, history
+        ├── App.jsx                  # Model selector, sample texts, analyze form, results, history
         ├── App.css
         └── components/
             ├── Analytics.jsx        # Recharts dashboard
@@ -356,14 +357,21 @@ Raw strings as cache keys are memory-inefficient for long texts. MD5 produces a 
 - Model tracking with visual badges
 
 ### Phase 3 — AI Integration (Complete)
-- Comprehensive test suite (62 tests, 100% pass rate)
-- Cross-platform setup scripts (Mac/Linux/Windows)
 - OpenAI GPT-4o-mini integration with emotion detection + reasoning
 - Shared analyzer contract across all three models
 - LRU caching layer (80% cost reduction)
 - Frontend model selector UI, emotion pills, reasoning card
-- Database migration (emotions, reasoning columns)
+- Database schema migration (emotions, reasoning, model columns)
+- Comprehensive test suite (62 tests, 100% pass rate)
+- Cross-platform setup scripts (Mac/Linux/Windows)
 - Full production deployment of GPT integration
+
+### Phase 4 — Polish & Stability (Complete)
+- Interactive sample texts — 6 curated examples with auto model selection
+- 60s fetch timeout with helpful cold start error message
+- PostgreSQL database upgrade and schema migration on Render
+- Removed legacy environment variables and unused code
+- Production bug fixes: saved_to_db, OPENAI_API_KEY, schema mismatch
 
 ---
 
