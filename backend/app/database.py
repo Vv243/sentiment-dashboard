@@ -82,7 +82,10 @@ def create_tables():
                 flagged BOOLEAN DEFAULT FALSE,
                 moderation_reason TEXT,
                 moderation_severity VARCHAR(20),
-                user_feedback VARCHAR(10)
+                user_feedback VARCHAR(10),
+                model VARCHAR(50),
+                emotions TEXT,
+                reasoning TEXT
             )
         ''')
 
